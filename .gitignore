@@ -1,0 +1,4 @@
+node_modules
+dist
+trades.db
+.DS_Store
