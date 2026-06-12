@@ -8,7 +8,9 @@
     "dev:backend": "bun --watch server/index.ts",
     "dev": "vite & bun --watch server/index.ts",
     "build": "tsc && vite build",
-    "start": "bun server/index.ts"
+    "start": "bun server/index.ts",
+    "deploy": "bun run build && firebase deploy --only hosting",
+    "deploy:all": "bun run build && firebase deploy"
   },
   "dependencies": {
     "firebase": "^12.14.0",
