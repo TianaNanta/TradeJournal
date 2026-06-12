@@ -7,23 +7,25 @@ import TradeModal from './TradeModal';
 interface JournalProps {
   trades: Trade[];
   onRefresh: () => void;
+  userId: string;
+  accountId: string;
+  currency?: string;
 }
 
-const formatCurrency = (value: number) => {
-  const formatted = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(Math.abs(value));
-  if (value > 0) {
-    return `+${formatted}`;
-  }
-  if (value < 0) {
-    return `-${formatted}`;
-  }
-  return formatted;
-};
-
-export default function Journal({ trades, onRefresh }: JournalProps) {
+export default function Journal({ trades, onRefresh, userId, accountId, currency = 'USD' }: JournalProps) {
+  const formatCurrency = (value: number) => {
+    const formatted = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+    }).format(Math.abs(value));
+    if (value > 0) {
+      return `+${formatted}`;
+    }
+    if (value < 0) {
+      return `-${formatted}`;
+    }
+    return formatted;
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'CLOSED'>('ALL');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'LONG' | 'SHORT'>('ALL');
@@ -105,10 +107,10 @@ export default function Journal({ trades, onRefresh }: JournalProps) {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this trade? This action cannot be undone.")) {
       try {
-        await api.deleteTrade(id);
+        await api.deleteTrade(userId, accountId, id);
         onRefresh();
       } catch (err) {
         console.error(err);
@@ -409,6 +411,9 @@ export default function Journal({ trades, onRefresh }: JournalProps) {
           trade={editingTrade}
           onClose={() => setIsModalOpen(false)}
           onRefresh={onRefresh}
+          userId={userId}
+          accountId={accountId}
+          currency={currency}
         />
       )}
     </div>

@@ -20,25 +20,25 @@ interface DashboardProps {
   trades: Trade[];
   onRefresh: () => void;
   onViewJournal: () => void;
+  currency?: string;
 }
-
-const formatCurrency = (value: number) => {
-  const formatted = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(Math.abs(value));
-  if (value > 0) {
-    return `+${formatted}`;
-  }
-  if (value < 0) {
-    return `-${formatted}`;
-  }
-  return formatted;
-};
 
 const PIE_COLORS = ['#10B981', '#EF4444'];
 
-export default function Dashboard({ stats, trades, onViewJournal }: DashboardProps) {
+export default function Dashboard({ stats, trades, onViewJournal, currency = 'USD' }: DashboardProps) {
+  const formatCurrency = (value: number) => {
+    const formatted = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+    }).format(Math.abs(value));
+    if (value > 0) {
+      return `+${formatted}`;
+    }
+    if (value < 0) {
+      return `-${formatted}`;
+    }
+    return formatted;
+  };
   if (!stats || stats.totalTrades === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-20 px-4">

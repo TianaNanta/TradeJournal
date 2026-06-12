@@ -4,23 +4,23 @@ import type { Trade } from '../types';
 
 interface CalendarViewProps {
   trades: Trade[];
+  currency?: string;
 }
 
-const formatCurrency = (value: number) => {
-  const formatted = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(Math.abs(value));
-  if (value > 0) {
-    return `+${formatted}`;
-  }
-  if (value < 0) {
-    return `-${formatted}`;
-  }
-  return formatted;
-};
-
-export default function CalendarView({ trades }: CalendarViewProps) {
+export default function CalendarView({ trades, currency = 'USD' }: CalendarViewProps) {
+  const formatCurrency = (value: number) => {
+    const formatted = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+    }).format(Math.abs(value));
+    if (value > 0) {
+      return `+${formatted}`;
+    }
+    if (value < 0) {
+      return `-${formatted}`;
+    }
+    return formatted;
+  };
   const [currentMonth, setCurrentMonth] = useState<Date>(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);

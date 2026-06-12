@@ -1,5 +1,5 @@
 export interface Trade {
-  id?: number;
+  id?: string;
   symbol: string;
   type: 'LONG' | 'SHORT';
   quantity: number;
@@ -12,6 +12,16 @@ export interface Trade {
   pnl: number;
   setup?: string | null;
   notes?: string | null;
+  accountId: string;
+}
+
+export interface BrokerAccount {
+  id: string;
+  name: string;
+  initialCapital: number;
+  currentCapital: number;
+  currency: string;
+  createdAt: string;
 }
 
 export interface DashboardStats {

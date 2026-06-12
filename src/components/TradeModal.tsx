@@ -7,9 +7,21 @@ interface TradeModalProps {
   trade: Trade | null;
   onClose: () => void;
   onRefresh: () => void;
+  userId: string;
+  accountId: string;
+  currency?: string;
 }
 
-export default function TradeModal({ trade, onClose, onRefresh }: TradeModalProps) {
+export default function TradeModal({ trade, onClose, onRefresh, userId, accountId, currency = 'USD' }: TradeModalProps) {
+  const getCurrencySymbol = (curr: string) => {
+    switch (curr) {
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'JPY': return '¥';
+      default: return '$';
+    }
+  };
+  const cSymbol = getCurrencySymbol(currency);
   const [symbol, setSymbol] = useState('');
   const [type, setType] = useState<'LONG' | 'SHORT'>('LONG');
   const [quantity, setQuantity] = useState('');
@@ -129,9 +141,9 @@ export default function TradeModal({ trade, onClose, onRefresh }: TradeModalProp
       };
 
       if (trade && trade.id !== undefined) {
-        await api.updateTrade(trade.id, payload);
+        await api.updateTrade(userId, accountId, trade.id, payload);
       } else {
-        await api.createTrade(payload);
+        await api.createTrade(userId, accountId, payload);
       }
       onRefresh();
       onClose();
@@ -235,7 +247,7 @@ export default function TradeModal({ trade, onClose, onRefresh }: TradeModalProp
             {/* Entry Price */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                Entry Price ($)
+                Entry Price ({cSymbol})
               </label>
               <input
                 type="number"
@@ -252,7 +264,7 @@ export default function TradeModal({ trade, onClose, onRefresh }: TradeModalProp
             {/* Fee */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                Commission Fee ($)
+                Commission Fee ({cSymbol})
               </label>
               <input
                 type="number"
@@ -287,7 +299,7 @@ export default function TradeModal({ trade, onClose, onRefresh }: TradeModalProp
               {/* Exit Price */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Exit Price ($)
+                  Exit Price ({cSymbol})
                 </label>
                 <input
                   type="number"

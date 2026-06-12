@@ -6,9 +6,11 @@ import { api } from '../utils/api';
 interface ImportExportProps {
   trades: Trade[];
   onImportSuccess: () => void;
+  userId: string;
+  accountId: string;
 }
 
-export default function ImportExport({ trades, onImportSuccess }: ImportExportProps) {
+export default function ImportExport({ trades, onImportSuccess, userId, accountId }: ImportExportProps) {
   const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [pastedCSV, setPastedCSV] = useState('');
 
@@ -75,7 +77,7 @@ export default function ImportExport({ trades, onImportSuccess }: ImportExportPr
         return;
       }
 
-      const res = await api.importCSV(csvText);
+      const res = await api.importCSV(userId, accountId, csvText);
       if (res.success) {
         setImportStatus({ type: 'success', message: `Successfully imported ${res.count} trades.` });
         setPastedCSV('');
