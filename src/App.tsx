@@ -148,6 +148,7 @@ function App() {
   // Fetch accounts on user login
   useEffect(() => {
     if (user) {
+      setLoadingData(true);
       fetchAccounts(user.uid).then((fetched) => {
         if (fetched.length > 0) {
           const storedId = localStorage.getItem(`active_acc_${user.uid}`);
@@ -158,7 +159,7 @@ function App() {
         } else {
           setActiveAccount(null);
         }
-      });
+      }).finally(() => setLoadingData(false));
     } else {
       setAccounts([]);
       setActiveAccount(null);
