@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Info } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import type { Trade } from '../types';
+import { formatCurrency } from '../utils/format';
 
 interface CalendarViewProps {
   trades: Trade[];
@@ -8,19 +9,6 @@ interface CalendarViewProps {
 }
 
 export default function CalendarView({ trades, currency = 'USD' }: CalendarViewProps) {
-  const formatCurrency = (value: number) => {
-    const formatted = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(Math.abs(value));
-    if (value > 0) {
-      return `+${formatted}`;
-    }
-    if (value < 0) {
-      return `-${formatted}`;
-    }
-    return formatted;
-  };
   const [currentMonth, setCurrentMonth] = useState<Date>(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
@@ -47,14 +35,24 @@ export default function CalendarView({ trades, currency = 'USD' }: CalendarViewP
   const month = currentMonth.getMonth();
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   // Calendar grid generation
   const calendarCells = useMemo(() => {
     const cells: { date: Date; dateStr: string; isCurrentMonth: boolean; dayNumber: number }[] = [];
-    
+
     const firstDay = new Date(year, month, 1);
     const startDayOfWeek = firstDay.getDay(); // 0 is Sunday
     const totalDays = new Date(year, month + 1, 0).getDate();
@@ -69,7 +67,7 @@ export default function CalendarView({ trades, currency = 'USD' }: CalendarViewP
         date: prevDate,
         dateStr,
         isCurrentMonth: false,
-        dayNumber: d
+        dayNumber: d,
       });
     }
 
@@ -81,7 +79,7 @@ export default function CalendarView({ trades, currency = 'USD' }: CalendarViewP
         date: currDate,
         dateStr,
         isCurrentMonth: true,
-        dayNumber: d
+        dayNumber: d,
       });
     }
 
@@ -94,7 +92,7 @@ export default function CalendarView({ trades, currency = 'USD' }: CalendarViewP
         date: nextDate,
         dateStr,
         isCurrentMonth: false,
-        dayNumber: d
+        dayNumber: d,
       });
     }
 
@@ -102,12 +100,12 @@ export default function CalendarView({ trades, currency = 'USD' }: CalendarViewP
   }, [year, month]);
 
   const handlePrevMonth = () => {
-    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
     setSelectedDateStr(null);
   };
 
   const handleNextMonth = () => {
-    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
     setSelectedDateStr(null);
   };
 
@@ -135,12 +133,14 @@ export default function CalendarView({ trades, currency = 'USD' }: CalendarViewP
             </h2>
             <div className="flex items-center gap-1">
               <button
+                type="button"
                 onClick={handlePrevMonth}
                 className="p-1.5 rounded-lg border border-brand-border hover:bg-brand-border text-slate-400 hover:text-white transition-colors"
               >
                 <ChevronLeft size={16} />
               </button>
               <button
+                type="button"
                 onClick={handleNextMonth}
                 className="p-1.5 rounded-lg border border-brand-border hover:bg-brand-border text-slate-400 hover:text-white transition-colors"
               >
@@ -162,28 +162,37 @@ export default function CalendarView({ trades, currency = 'USD' }: CalendarViewP
 
           {/* Days grid */}
           <div className="grid grid-cols-7 gap-1 bg-brand-border/40 p-0.5 rounded-lg">
-            {calendarCells.map((cell, idx) => {
+            {calendarCells.map((cell, _idx) => {
               const dayStat = dailyStats[cell.dateStr];
               const hasTrades = !!dayStat;
               const isSelected = selectedDateStr === cell.dateStr;
 
               return (
                 <div
-                  key={idx}
+                  key={cell.dateStr}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedDateStr(cell.dateStr)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') setSelectedDateStr(cell.dateStr);
+                  }}
                   className={`min-h-[72px] sm:min-h-[84px] bg-brand-dark p-1.5 flex flex-col justify-between rounded-md cursor-pointer transition-all hover:bg-brand-border/30 select-none ${
                     cell.isCurrentMonth ? 'text-slate-200' : 'text-slate-600'
-                  } ${
-                    isSelected ? 'ring-2 ring-brand-primary bg-brand-primary/5' : ''
-                  }`}
+                  } ${isSelected ? 'ring-2 ring-brand-primary bg-brand-primary/5' : ''}`}
                 >
                   <span className="text-xs font-semibold">{cell.dayNumber}</span>
-                  
+
                   {hasTrades ? (
-                    <div className={`text-[10px] sm:text-xs font-bold py-0.5 px-1 rounded text-center truncate ${
-                      dayStat.pnl > 0 ? 'bg-brand-success/10 text-brand-success' : dayStat.pnl < 0 ? 'bg-brand-danger/10 text-brand-danger' : 'bg-slate-500/10 text-slate-400'
-                    }`}>
-                      {formatCurrency(dayStat.pnl)}
+                    <div
+                      className={`text-[10px] sm:text-xs font-bold py-0.5 px-1 rounded text-center truncate ${
+                        dayStat.pnl > 0
+                          ? 'bg-brand-success/10 text-brand-success'
+                          : dayStat.pnl < 0
+                            ? 'bg-brand-danger/10 text-brand-danger'
+                            : 'bg-slate-500/10 text-slate-400'
+                      }`}
+                    >
+                      {formatCurrency(dayStat.pnl, currency)}
                     </div>
                   ) : (
                     <div className="h-4" /> // empty spacer
@@ -214,40 +223,70 @@ export default function CalendarView({ trades, currency = 'USD' }: CalendarViewP
               <div className="space-y-4">
                 <div className="flex justify-between items-center bg-brand-dark/50 p-3 rounded-lg border border-brand-border">
                   <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Day Net PnL</span>
-                  <span className={`text-base font-bold font-mono ${
-                    selectedDayDetails.pnl > 0 ? 'text-brand-success' : selectedDayDetails.pnl < 0 ? 'text-brand-danger' : 'text-slate-400'
-                  }`}>
-                    {formatCurrency(selectedDayDetails.pnl)}
+                  <span
+                    className={`text-base font-bold font-mono ${
+                      selectedDayDetails.pnl > 0
+                        ? 'text-brand-success'
+                        : selectedDayDetails.pnl < 0
+                          ? 'text-brand-danger'
+                          : 'text-slate-400'
+                    }`}
+                  >
+                    {formatCurrency(selectedDayDetails.pnl, currency)}
                   </span>
                 </div>
 
                 <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
                   {selectedDayDetails.trades.map((trade) => (
-                    <div key={trade.id} className="p-3 bg-brand-dark border border-brand-border rounded-lg space-y-2 text-xs">
+                    <div
+                      key={trade.id}
+                      className="p-3 bg-brand-dark border border-brand-border rounded-lg space-y-2 text-xs"
+                    >
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-1.5">
                           <span className="font-bold uppercase text-slate-100">{trade.symbol}</span>
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                            trade.type === 'LONG' ? 'bg-brand-success/15 text-brand-success' : 'bg-brand-danger/15 text-brand-danger'
-                          }`}>
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                              trade.type === 'LONG'
+                                ? 'bg-brand-success/15 text-brand-success'
+                                : 'bg-brand-danger/15 text-brand-danger'
+                            }`}
+                          >
                             {trade.type}
                           </span>
                         </div>
-                        <span className={`font-bold font-mono ${
-                          trade.pnl > 0 ? 'text-brand-success' : trade.pnl < 0 ? 'text-brand-danger' : 'text-slate-400'
-                        }`}>
-                          {formatCurrency(trade.pnl)}
+                        <span
+                          className={`font-bold font-mono ${
+                            trade.pnl > 0
+                              ? 'text-brand-success'
+                              : trade.pnl < 0
+                                ? 'text-brand-danger'
+                                : 'text-slate-400'
+                          }`}
+                        >
+                          {formatCurrency(trade.pnl, currency)}
                         </span>
                       </div>
                       <div className="grid grid-cols-2 gap-1 text-[10px] text-slate-400">
-                        <div>Qty: <span className="text-slate-200">{trade.quantity}</span></div>
-                        <div className="text-right">Entry: <span className="text-slate-200">${trade.entry_price.toFixed(2)}</span></div>
-                        <div>Fee: <span className="text-slate-200">${trade.fee.toFixed(2)}</span></div>
-                        <div className="text-right">Exit: <span className="text-slate-200">${trade.exit_price?.toFixed(2) || '—'}</span></div>
+                        <div>
+                          Qty: <span className="text-slate-200">{trade.quantity}</span>
+                        </div>
+                        <div className="text-right">
+                          Entry: <span className="text-slate-200">${trade.entry_price.toFixed(2)}</span>
+                        </div>
+                        <div>
+                          Fee: <span className="text-slate-200">${trade.fee.toFixed(2)}</span>
+                        </div>
+                        <div className="text-right">
+                          Exit: <span className="text-slate-200">${trade.exit_price?.toFixed(2) || '—'}</span>
+                        </div>
                       </div>
                       {trade.setup && (
                         <div className="pt-1 text-[10px] text-slate-400">
-                          Setup: <span className="px-1.5 py-0.2 rounded bg-brand-border text-slate-300 font-semibold">{trade.setup}</span>
+                          Setup:{' '}
+                          <span className="px-1.5 py-0.2 rounded bg-brand-border text-slate-300 font-semibold">
+                            {trade.setup}
+                          </span>
                         </div>
                       )}
                     </div>

@@ -7,6 +7,9 @@
     "dev:frontend": "vite",
     "dev:backend": "bun --watch server/index.ts",
     "dev": "vite & bun --watch server/index.ts",
+    "lint": "biome check src/ server/",
+    "lint:fix": "biome check --write src/ server/",
+    "format": "biome format --write src/ server/",
     "build": "tsc && vite build",
     "start": "bun server/index.ts",
     "deploy": "bun run build && firebase deploy --only hosting",
@@ -20,9 +23,10 @@
     "recharts": "^2.12.7"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
+    "@types/bun": "^1.1.4",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@types/bun": "^1.1.4",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",

@@ -1,31 +1,32 @@
-import { useState, useEffect, useCallback } from 'react';
-import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import {
-  LayoutDashboard,
+  AlertCircle,
+  ArrowLeftRight,
   BookOpen,
   Calendar,
-  ArrowLeftRight,
-  TrendingUp,
-  AlertCircle,
-  Plus,
-  Settings,
-  LogOut,
-  ChevronDown,
   Check,
-  User as UserIcon,
+  ChevronDown,
+  FolderOpen,
+  LayoutDashboard,
+  LogOut,
+  Plus,
   RefreshCw,
-  FolderOpen
+  Settings,
+  TrendingUp,
+  User as UserIcon,
 } from 'lucide-react';
-import type { Trade, DashboardStats, BrokerAccount } from './types';
+import { useCallback, useEffect, useState } from 'react';
+import Auth from './components/Auth';
+import CalendarView from './components/CalendarView';
+import Dashboard from './components/Dashboard';
+import FirebaseSetup from './components/FirebaseSetup';
+import ImportExport from './components/ImportExport';
+import Journal from './components/Journal';
+import type { BrokerAccount, DashboardStats, Trade } from './types';
 import { api } from './utils/api';
 import { getFirebaseAuth, isFirebaseConfigured } from './utils/firebase';
+import { formatCurrency } from './utils/format';
 import { calculateStats } from './utils/stats';
-import FirebaseSetup from './components/FirebaseSetup';
-import Auth from './components/Auth';
-import Dashboard from './components/Dashboard';
-import Journal from './components/Journal';
-import CalendarView from './components/CalendarView';
-import ImportExport from './components/ImportExport';
 
 function App() {
   const [isConfigured, setIsConfigured] = useState(isFirebaseConfigured());
@@ -37,7 +38,7 @@ function App() {
   const [activeAccount, setActiveAccount] = useState<BrokerAccount | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  
+
   const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,8 +81,8 @@ function App() {
       setAccounts(fetchedAccounts);
       return fetchedAccounts;
     } catch (err) {
-      console.error("Failed to load broker accounts:", err);
-      setError("Failed to load broker accounts. Check Firestore rules.");
+      console.error('Failed to load broker accounts:', err);
+      setError('Failed to load broker accounts. Check Firestore rules.');
       return [];
     }
   }, []);
@@ -96,8 +97,8 @@ function App() {
       const computedStats = calculateStats(fetchedTrades);
       setStats(computedStats);
     } catch (err) {
-      console.error("Failed to load trades:", err);
-      setError("Failed to load trade data from online database.");
+      console.error('Failed to load trades:', err);
+      setError('Failed to load trade data from online database.');
     } finally {
       setLoadingData(false);
     }
@@ -110,11 +111,11 @@ function App() {
     try {
       const fetchedAccounts = await api.getAccounts(user.uid);
       setAccounts(fetchedAccounts);
-      
+
       // If active account no longer exists, default to first or null
       let currentActive = activeAccount;
       if (currentActive) {
-        const stillExists = fetchedAccounts.find(a => a.id === currentActive!.id);
+        const stillExists = fetchedAccounts.find((a) => a.id === currentActive!.id);
         if (stillExists) {
           // Update details (capital might have changed)
           currentActive = stillExists;
@@ -139,7 +140,7 @@ function App() {
       }
     } catch (err) {
       console.error(err);
-      setError("Failed to refresh data.");
+      setError('Failed to refresh data.');
     } finally {
       setLoadingData(false);
     }
@@ -149,17 +150,19 @@ function App() {
   useEffect(() => {
     if (user) {
       setLoadingData(true);
-      fetchAccounts(user.uid).then((fetched) => {
-        if (fetched.length > 0) {
-          const storedId = localStorage.getItem(`active_acc_${user.uid}`);
-          const match = fetched.find(a => a.id === storedId);
-          const active = match || fetched[0];
-          setActiveAccount(active);
-          localStorage.setItem(`active_acc_${user.uid}`, active.id);
-        } else {
-          setActiveAccount(null);
-        }
-      }).finally(() => setLoadingData(false));
+      fetchAccounts(user.uid)
+        .then((fetched) => {
+          if (fetched.length > 0) {
+            const storedId = localStorage.getItem(`active_acc_${user.uid}`);
+            const match = fetched.find((a) => a.id === storedId);
+            const active = match || fetched[0];
+            setActiveAccount(active);
+            localStorage.setItem(`active_acc_${user.uid}`, active.id);
+          } else {
+            setActiveAccount(null);
+          }
+        })
+        .finally(() => setLoadingData(false));
     } else {
       setAccounts([]);
       setActiveAccount(null);
@@ -186,13 +189,13 @@ function App() {
     setAccountError(null);
 
     if (!newAccountName.trim()) {
-      setAccountError("Account name is required.");
+      setAccountError('Account name is required.');
       return;
     }
 
     const cap = Number(newAccountCapital);
-    if (isNaN(cap) || cap < 0) {
-      setAccountError("Initial capital must be a positive number.");
+    if (Number.isNaN(cap) || cap < 0) {
+      setAccountError('Initial capital must be a positive number.');
       return;
     }
 
@@ -200,14 +203,14 @@ function App() {
       const created = await api.createAccount(user.uid, {
         name: newAccountName.trim(),
         initialCapital: cap,
-        currency: newAccountCurrency
+        currency: newAccountCurrency,
       });
 
       const updatedAccounts = await fetchAccounts(user.uid);
       // Set the newly created account as active
-      const match = updatedAccounts.find(a => a.id === created.id) || created;
+      const match = updatedAccounts.find((a) => a.id === created.id) || created;
       setActiveAccount(match);
-      
+
       // Reset form
       setNewAccountName('');
       setNewAccountCapital('10000');
@@ -215,13 +218,17 @@ function App() {
       setIsAccountModalOpen(false);
     } catch (err) {
       console.error(err);
-      setAccountError("Failed to create account.");
+      setAccountError('Failed to create account.');
     }
   };
 
   const handleDeleteAccount = async (accountId: string) => {
     if (!user) return;
-    if (window.confirm("Are you sure you want to delete this broker account? All trades associated with it will be permanently deleted. This action cannot be undone.")) {
+    if (
+      window.confirm(
+        'Are you sure you want to delete this broker account? All trades associated with it will be permanently deleted. This action cannot be undone.',
+      )
+    ) {
       try {
         await api.deleteAccount(user.uid, accountId);
         const updatedAccounts = await fetchAccounts(user.uid);
@@ -232,7 +239,7 @@ function App() {
         }
       } catch (err) {
         console.error(err);
-        alert("Failed to delete account.");
+        alert('Failed to delete account.');
       }
     }
   };
@@ -309,10 +316,14 @@ function App() {
 
           <form onSubmit={handleCreateAccount} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+              <label
+                htmlFor="first-acc-name"
+                className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5"
+              >
                 Broker / Account Name
               </label>
               <input
+                id="first-acc-name"
                 type="text"
                 required
                 placeholder="e.g. Interactive Brokers, Binance"
@@ -324,10 +335,14 @@ function App() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                <label
+                  htmlFor="first-acc-capital"
+                  className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5"
+                >
                   Initial Capital
                 </label>
                 <input
+                  id="first-acc-capital"
                   type="number"
                   required
                   min="0"
@@ -338,10 +353,14 @@ function App() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                <label
+                  htmlFor="first-acc-currency"
+                  className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5"
+                >
                   Currency
                 </label>
                 <select
+                  id="first-acc-currency"
                   value={newAccountCurrency}
                   onChange={(e) => setNewAccountCurrency(e.target.value)}
                   className="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-primary text-slate-200 cursor-pointer"
@@ -365,6 +384,7 @@ function App() {
           </form>
 
           <button
+            type="button"
             onClick={handleSignOut}
             className="w-full text-xs text-slate-500 hover:text-white transition-colors"
           >
@@ -374,17 +394,6 @@ function App() {
       </div>
     );
   }
-
-  const formatCurrency = (value: number) => {
-    if (!activeAccount) return String(value);
-    const formatted = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: activeAccount.currency,
-    }).format(Math.abs(value));
-    if (value > 0) return `+${formatted}`;
-    if (value < 0) return `-${formatted}`;
-    return formatted;
-  };
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-brand-dark text-slate-100 font-sans">
@@ -408,6 +417,7 @@ function App() {
               <span>Trading Account</span>
               <div className="flex gap-1.5">
                 <button
+                  type="button"
                   onClick={() => setIsAccountModalOpen(true)}
                   className="p-1 rounded text-slate-400 hover:bg-brand-border hover:text-white transition-colors"
                   title="Create new account"
@@ -415,6 +425,7 @@ function App() {
                   <Plus size={14} />
                 </button>
                 <button
+                  type="button"
                   onClick={() => setIsManageModalOpen(true)}
                   className="p-1 rounded text-slate-400 hover:bg-brand-border hover:text-white transition-colors"
                   title="Manage accounts"
@@ -430,18 +441,21 @@ function App() {
                 <select
                   value={activeAccount.id}
                   onChange={(e) => {
-                    const match = accounts.find(a => a.id === e.target.value);
+                    const match = accounts.find((a) => a.id === e.target.value);
                     if (match) handleAccountChange(match);
                   }}
                   className="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2.5 text-sm font-semibold flex justify-between items-center text-slate-200 cursor-pointer appearance-none focus:outline-none focus:border-brand-primary"
                 >
-                  {accounts.map(acc => (
+                  {accounts.map((acc) => (
                     <option key={acc.id} value={acc.id} className="bg-brand-card py-2">
                       {acc.name} ({acc.currency})
                     </option>
                   ))}
                 </select>
-                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-slate-200 transition-colors" />
+                <ChevronDown
+                  size={16}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-slate-200 transition-colors"
+                />
               </div>
             )}
 
@@ -449,12 +463,18 @@ function App() {
               <div className="bg-brand-dark/40 border border-brand-border rounded-xl p-3 space-y-1 mt-2">
                 <div className="flex justify-between text-[11px] text-slate-400 font-medium">
                   <span>Current Capital</span>
-                  <span className="font-mono text-slate-300">Initial: {activeAccount.currency} {activeAccount.initialCapital.toLocaleString()}</span>
+                  <span className="font-mono text-slate-300">
+                    Initial: {activeAccount.currency} {activeAccount.initialCapital.toLocaleString()}
+                  </span>
                 </div>
-                <div className={`text-base font-bold font-mono ${
-                  activeAccount.currentCapital >= activeAccount.initialCapital ? 'text-brand-success' : 'text-brand-danger'
-                }`}>
-                  {formatCurrency(activeAccount.currentCapital)}
+                <div
+                  className={`text-base font-bold font-mono ${
+                    activeAccount.currentCapital >= activeAccount.initialCapital
+                      ? 'text-brand-success'
+                      : 'text-brand-danger'
+                  }`}
+                >
+                  {formatCurrency(activeAccount.currentCapital, activeAccount.currency)}
                 </div>
               </div>
             )}
@@ -467,6 +487,7 @@ function App() {
               const isActive = activeTab === item.id;
               return (
                 <button
+                  type="button"
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
                   className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
@@ -494,6 +515,7 @@ function App() {
               <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Online User</span>
             </div>
             <button
+              type="button"
               onClick={handleSignOut}
               className="p-1.5 rounded-lg text-slate-400 hover:text-brand-danger hover:bg-brand-danger/10 transition-colors"
               title="Sign Out"
@@ -504,10 +526,7 @@ function App() {
 
           <div className="flex justify-between items-center text-[10px] text-slate-500 px-1">
             <span>Online Storage</span>
-            <button
-              onClick={handleResetConfig}
-              className="hover:underline hover:text-brand-primary"
-            >
+            <button type="button" onClick={handleResetConfig} className="hover:underline hover:text-brand-primary">
               Reset Firebase Config
             </button>
           </div>
@@ -530,12 +549,12 @@ function App() {
               <select
                 value={activeAccount.id}
                 onChange={(e) => {
-                  const match = accounts.find(a => a.id === e.target.value);
+                  const match = accounts.find((a) => a.id === e.target.value);
                   if (match) handleAccountChange(match);
                 }}
                 className="bg-transparent w-full focus:outline-none cursor-pointer appearance-none text-slate-200 pr-4 relative"
               >
-                {accounts.map(acc => (
+                {accounts.map((acc) => (
                   <option key={acc.id} value={acc.id} className="bg-brand-card py-1 text-slate-300">
                     {acc.name}
                   </option>
@@ -549,10 +568,14 @@ function App() {
         {activeAccount && (
           <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-brand-border text-xs">
             <span className="text-slate-400">Current Capital:</span>
-            <span className={`font-bold font-mono ${
-              activeAccount.currentCapital >= activeAccount.initialCapital ? 'text-brand-success' : 'text-brand-danger'
-            }`}>
-              {formatCurrency(activeAccount.currentCapital)}
+            <span
+              className={`font-bold font-mono ${
+                activeAccount.currentCapital >= activeAccount.initialCapital
+                  ? 'text-brand-success'
+                  : 'text-brand-danger'
+              }`}
+            >
+              {formatCurrency(activeAccount.currentCapital, activeAccount.currency)}
             </span>
           </div>
         )}
@@ -567,6 +590,7 @@ function App() {
               <h3 className="font-semibold text-sm">Database Error</h3>
               <p className="text-xs mt-1 text-brand-danger/90">{error}</p>
               <button
+                type="button"
                 onClick={refreshData}
                 className="mt-2 text-xs font-semibold underline hover:text-brand-danger/80"
               >
@@ -601,12 +625,7 @@ function App() {
                   currency={activeAccount?.currency}
                 />
               )}
-              {activeTab === 'calendar' && (
-                <CalendarView
-                  trades={trades}
-                  currency={activeAccount?.currency}
-                />
-              )}
+              {activeTab === 'calendar' && <CalendarView trades={trades} currency={activeAccount?.currency} />}
               {activeTab === 'import-export' && (
                 <ImportExport
                   onImportSuccess={refreshData}
@@ -627,6 +646,7 @@ function App() {
           const isActive = activeTab === item.id;
           return (
             <button
+              type="button"
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`flex flex-col items-center gap-1 text-[10px] font-medium transition-colors ${
@@ -647,6 +667,7 @@ function App() {
             <div className="px-6 py-4 border-b border-brand-border flex justify-between items-center">
               <h2 className="text-base font-bold">Add New Trading Account</h2>
               <button
+                type="button"
                 onClick={() => setIsAccountModalOpen(false)}
                 className="text-slate-400 hover:text-white"
               >
@@ -662,10 +683,14 @@ function App() {
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                <label
+                  htmlFor="add-acc-name"
+                  className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1"
+                >
                   Account Name
                 </label>
                 <input
+                  id="add-acc-name"
                   type="text"
                   required
                   placeholder="e.g. Robinhood, FTMO"
@@ -677,10 +702,14 @@ function App() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                  <label
+                    htmlFor="add-acc-capital"
+                    className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1"
+                  >
                     Initial Capital
                   </label>
                   <input
+                    id="add-acc-capital"
                     type="number"
                     required
                     min="0"
@@ -691,10 +720,14 @@ function App() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                  <label
+                    htmlFor="add-acc-currency"
+                    className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1"
+                  >
                     Currency
                   </label>
                   <select
+                    id="add-acc-currency"
                     value={newAccountCurrency}
                     onChange={(e) => setNewAccountCurrency(e.target.value)}
                     className="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-primary text-slate-200 cursor-pointer"
@@ -736,6 +769,7 @@ function App() {
             <div className="px-6 py-4 border-b border-brand-border flex justify-between items-center">
               <h2 className="text-base font-bold">Manage Trading Accounts</h2>
               <button
+                type="button"
                 onClick={() => setIsManageModalOpen(false)}
                 className="text-slate-400 hover:text-white"
               >
@@ -744,7 +778,7 @@ function App() {
             </div>
             <div className="p-6 space-y-4 max-h-[400px] overflow-y-auto">
               <div className="space-y-3">
-                {accounts.map(acc => {
+                {accounts.map((acc) => {
                   const isCurrent = activeAccount?.id === acc.id;
                   const formatAccountCurrency = (val: number) => {
                     return new Intl.NumberFormat('en-US', {
@@ -771,12 +805,16 @@ function App() {
                         </div>
                         <div className="flex gap-4 mt-1 text-[11px] font-mono text-slate-400">
                           <span>Initial: {formatAccountCurrency(acc.initialCapital)}</span>
-                          <span className={acc.currentCapital >= acc.initialCapital ? 'text-brand-success' : 'text-brand-danger'}>
+                          <span
+                            className={
+                              acc.currentCapital >= acc.initialCapital ? 'text-brand-success' : 'text-brand-danger'
+                            }
+                          >
                             Current: {formatAccountCurrency(acc.currentCapital)}
                           </span>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         {isCurrent && (
                           <span className="text-[10px] font-bold text-brand-primary flex items-center gap-1 mr-2 select-none bg-brand-primary/10 px-2 py-0.5 rounded">
@@ -784,6 +822,7 @@ function App() {
                           </span>
                         )}
                         <button
+                          type="button"
                           disabled={accounts.length === 1}
                           onClick={() => handleDeleteAccount(acc.id)}
                           className="p-1.5 text-slate-500 hover:text-brand-danger hover:bg-brand-danger/10 rounded-md transition-colors disabled:opacity-30 disabled:pointer-events-none"
@@ -799,6 +838,7 @@ function App() {
             </div>
             <div className="px-6 py-4 bg-brand-dark/40 border-t border-brand-border flex justify-end">
               <button
+                type="button"
                 onClick={() => setIsManageModalOpen(false)}
                 className="px-4 py-2 rounded-lg text-xs font-bold bg-brand-border text-slate-200 hover:text-white"
               >

@@ -4,7 +4,7 @@
 
 TradeJournal is a local single-user trading journal web app for logging, analyzing, and tracking trades. Users configure Firebase credentials (env vars or localStorage), authenticate via Email/Password or Google, create broker accounts, log trades (symbol, type, quantity, entry/exit prices, fees, notes), view a dashboard with KPIs and Recharts charts (cumulative PnL line chart, win/loss pie chart, PnL by setup bar chart), browse a paginated/filterable journal table, inspect daily PnL on a calendar heatmap, and import/export trade data as CSV or JSON.
 
-Built with **React 18 + Vite + TypeScript + Tailwind CSS** frontend, backed by **Firebase Auth + Firestore** for production, with an optional legacy **Bun + SQLite** backend for local development.
+Built with **React 18 + Vite 5 + TypeScript + Tailwind CSS 3** frontend, backed by **Firebase Auth + Firestore** for production, with an optional legacy **Bun + SQLite** backend for local development.
 
 ## Architecture & Data Flow
 
@@ -37,7 +37,7 @@ index.html → src/main.tsx → src/App.tsx (global state owner)
 |---|---|
 | `src/` | React frontend source |
 | `src/components/` | 7 UI components — Dashboard, Journal, TradeModal, CalendarView, ImportExport, Auth, FirebaseSetup |
-| `src/utils/` | Firebase init (`firebase.ts`), Firestore CRUD (`api.ts`), stats computation (`stats.ts`) |
+| `src/utils/` | Firebase init (`firebase.ts`), Firestore CRUD (`api.ts`), stats computation (`stats.ts`), currency formatting (`format.ts`) |
 | `server/` | Legacy Bun HTTP server + SQLite layer (local dev only; unused in production) |
 | `dist/` | Vite production build output (gitignored) |
 
@@ -53,6 +53,9 @@ index.html → src/main.tsx → src/App.tsx (global state owner)
 | `bun run start` | Production: serve `dist/` via Bun backend on port 3001 (local-only) |
 | `bun run deploy` | Build + `firebase deploy --only hosting` |
 | `bun run deploy:all` | Build + `firebase deploy` (hosting + firestore rules/indexes) |
+| `bun run lint` | Run Biome linter on `src/` and `server/` |
+| `bun run lint:fix` | Auto-fix lint issues (safe fixes only) |
+| `bun run format` | Auto-format all files with Biome |
 
 **Runtime requirement**: Bun 1.3+ (required for `bun:sqlite` and `Bun.serve` in the local dev server). The production deployment to Firebase Hosting does not require Bun.
 
@@ -61,7 +64,7 @@ index.html → src/main.tsx → src/App.tsx (global state owner)
 ### TypeScript
 
 - **Strict mode** enabled (`"strict": true`). All `noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns` are on.
-- **No `any`** — project uses `unknown`, domain types, type guards, or explicit casts with comments.
+- **No `any`** — project uses `unknown`, domain types, type guards, or explicit casts with comments. Biome linter flags `noExplicitAny` as an error.
 - **Three exported interfaces** in `src/types.ts`: `Trade`, `BrokerAccount`, `DashboardStats`. All use `| null` for nullable optional fields.
 - **Interfaces** in `src/utils/firebase.ts`: `FirebaseConfig` (6 VITE_FIREBASE_* fields).
 
@@ -106,11 +109,19 @@ index.html → src/main.tsx → src/App.tsx (global state owner)
 - **No React Router**: Tab switching via `activeTab` state + conditional rendering.
 - **All dates**: ISO 8601 strings. Components split on `'T'` for display.
 
+### Lint & Format
+
+- **Biome 2.5** handles both linting and formatting. No ESLint or Prettier.
+- **Formatting rules**: 2-space indent, 120 char width, single quotes, trailing commas (all).
+- **Lint rules**: `recommended` preset, `noUnusedVariables: error`, `noNonNullAssertion: off`.
+- **Import sorting**: Enabled via Biome's `assist.actions.source.organizeImports`.
+
 ### Duplicate Patterns (notable)
 
-- **`formatCurrency`** — standalone helper duplicated across Dashboard, Journal, TradeModal, CalendarView, and App.tsx (each defines its own). Uses `Intl.NumberFormat`, prepends `+`/`-`.
+- **`formatCurrency`** — shared utility in `src/utils/format.ts`. Uses `Intl.NumberFormat`, prepends `+`/`-`.
+- **Local `formatAccountCurrency`** — exist per-account in App.tsx's manage modal (inline function inside `accounts.map`).
 
-### Backend Patterns (local dev only)
+### Server Patterns (local dev only)
 
 - **Database**: `bun:sqlite` with raw SQL queries (no ORM). Database file is `trades.db` at project root (gitignored).
 - **PnL calculation**: Server-side on create/update. Formula:
@@ -132,6 +143,7 @@ index.html → src/main.tsx → src/App.tsx (global state owner)
 | `src/utils/firebase.ts` | Firebase lazy initialization — config, auth, firestore singletons |
 | `src/utils/api.ts` | Firestore CRUD operations (8 methods on `api` object) |
 | `src/utils/stats.ts` | Pure `calculateStats()` function |
+| `src/utils/format.ts` | Shared `formatCurrency` utility |
 | `src/components/Dashboard.tsx` | KPI cards + Recharts (Line, Pie, Bar) + recent trades |
 | `src/components/Journal.tsx` | Trade table with filters, sort, pagination, inline TradeModal |
 | `src/components/TradeModal.tsx` | Create/edit trade form with validation |
@@ -141,11 +153,13 @@ index.html → src/main.tsx → src/App.tsx (global state owner)
 | `src/components/FirebaseSetup.tsx` | Firebase config input (JSON paste or manual fields) |
 | `server/db.ts` | SQLite schema, CRUD, PnL calc, stats aggregation (local dev) |
 | `server/index.ts` | Bun HTTP server, routing, CORS, CSV import, static files (local dev) |
+| `biome.json` | Lint/format configuration |
+| `tsconfig.json` | Strict TypeScript config (target ES2022, bundler module resolution) |
 | `vite.config.ts` | Dev server port (3000), API proxy (→3001) |
 | `tailwind.config.js` | Brand colors, content paths |
 | `firebase.json` | Firebase Hosting config — public dir, SPA rewrites, cache headers |
 | `firestore.rules` | Security rules — user-scoped read/write by `request.auth.uid` |
-| `firestore.indexes.json` | Composite index definitions (empty — single-field queries covered) |
+| `firestore.indexes.json` | Empty — single-field queries are covered without composite indexes |
 | `.env` | Gitignored — `VITE_FIREBASE_*` credentials for build-time embedding |
 
 ## Runtime/Tooling Preferences
@@ -154,7 +168,7 @@ index.html → src/main.tsx → src/App.tsx (global state owner)
 - **Package manager**: Bun (`bun install`, `bun add`, `bun run`).
 - **Node.js**: Not used for local dev. Production deployment via Firebase CLI (`firebase deploy`).
 - **No database migration tool**: SQLite schema auto-created on server start via `initDb()` (local dev). Firestore is schema-less.
-- **No linter**: No ESLint, Prettier, or Biome configured. `tsc` provides type checking only.
+- **Lint/Format**: Biome 2.5 — no ESLint, Prettier, or Biome v1.
 - **Firebase CLI** (v15+) used for deployment.
 
 ## Testing & QA

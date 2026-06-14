@@ -1,5 +1,5 @@
+import { AlertCircle, ArrowRight, CheckCircle, Database, Info } from 'lucide-react';
 import { useState } from 'react';
-import { Database, AlertCircle, CheckCircle, ArrowRight, Info } from 'lucide-react';
 import { saveFirebaseConfig } from '../utils/firebase';
 
 interface FirebaseSetupProps {
@@ -14,7 +14,7 @@ export default function FirebaseSetup({ onConfigured }: FirebaseSetupProps) {
   const [storageBucket, setStorageBucket] = useState('');
   const [messagingSenderId, setMessagingSenderId] = useState('');
   const [appId, setAppId] = useState('');
-  
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -24,7 +24,10 @@ export default function FirebaseSetup({ onConfigured }: FirebaseSetupProps) {
 
     // Try to parse JSON directly
     try {
-      const cleaned = val.trim().replace(/^[^{]*/, '').replace(/[^}]*$/, '');
+      const cleaned = val
+        .trim()
+        .replace(/^[^{]*/, '')
+        .replace(/[^}]*$/, '');
       const json = JSON.parse(cleaned);
       if (json.apiKey && json.projectId) {
         setApiKey(json.apiKey || '');
@@ -35,7 +38,7 @@ export default function FirebaseSetup({ onConfigured }: FirebaseSetupProps) {
         setAppId(json.appId || '');
         return;
       }
-    } catch (e) {
+    } catch (_e) {
       // Ignore and try regex
     }
 
@@ -60,7 +63,7 @@ export default function FirebaseSetup({ onConfigured }: FirebaseSetupProps) {
     setError(null);
 
     if (!apiKey.trim() || !projectId.trim()) {
-      setError("API Key and Project ID are required minimum fields.");
+      setError('API Key and Project ID are required minimum fields.');
       return;
     }
 
@@ -80,7 +83,7 @@ export default function FirebaseSetup({ onConfigured }: FirebaseSetupProps) {
         onConfigured();
       }, 1500);
     } else {
-      setError("Failed to initialize Firebase with the provided configuration. Please check your credentials.");
+      setError('Failed to initialize Firebase with the provided configuration. Please check your credentials.');
     }
   };
 
@@ -121,8 +124,21 @@ export default function FirebaseSetup({ onConfigured }: FirebaseSetupProps) {
           <div className="space-y-1">
             <h4 className="font-semibold text-slate-300">How to get your config:</h4>
             <ol className="list-decimal list-inside space-y-0.5">
-              <li>Open <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer" className="text-brand-primary underline hover:text-brand-primary/80">Firebase Console</a> and create/select a project.</li>
-              <li>Go to Project Settings &rarr; General &rarr; Add App (choose <strong>Web</strong>).</li>
+              <li>
+                Open{' '}
+                <a
+                  href="https://console.firebase.google.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brand-primary underline hover:text-brand-primary/80"
+                >
+                  Firebase Console
+                </a>{' '}
+                and create/select a project.
+              </li>
+              <li>
+                Go to Project Settings &rarr; General &rarr; Add App (choose <strong>Web</strong>).
+              </li>
               <li>Enable Firestore Database and Authentication (Google + Email/Password providers).</li>
               <li>Copy the `firebaseConfig` object and paste it in the box below.</li>
             </ol>
@@ -131,10 +147,14 @@ export default function FirebaseSetup({ onConfigured }: FirebaseSetupProps) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            <label
+              htmlFor="fb-raw-config"
+              className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
+            >
               Paste Firebase Config Code Snippet
             </label>
             <textarea
+              id="fb-raw-config"
               rows={4}
               value={rawConfig}
               onChange={(e) => handlePasteChange(e.target.value)}
@@ -152,10 +172,14 @@ export default function FirebaseSetup({ onConfigured }: FirebaseSetupProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+              <label
+                htmlFor="fb-api-key"
+                className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1"
+              >
                 API Key
               </label>
               <input
+                id="fb-api-key"
                 type="text"
                 required
                 value={apiKey}
@@ -166,10 +190,14 @@ export default function FirebaseSetup({ onConfigured }: FirebaseSetupProps) {
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+              <label
+                htmlFor="fb-project-id"
+                className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1"
+              >
                 Project ID
               </label>
               <input
+                id="fb-project-id"
                 type="text"
                 required
                 value={projectId}
@@ -180,10 +208,14 @@ export default function FirebaseSetup({ onConfigured }: FirebaseSetupProps) {
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+              <label
+                htmlFor="fb-auth-domain"
+                className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1"
+              >
                 Auth Domain
               </label>
               <input
+                id="fb-auth-domain"
                 type="text"
                 value={authDomain}
                 onChange={(e) => setAuthDomain(e.target.value)}
@@ -193,10 +225,14 @@ export default function FirebaseSetup({ onConfigured }: FirebaseSetupProps) {
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+              <label
+                htmlFor="fb-app-id"
+                className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1"
+              >
                 App ID
               </label>
               <input
+                id="fb-app-id"
                 type="text"
                 value={appId}
                 onChange={(e) => setAppId(e.target.value)}
@@ -206,10 +242,14 @@ export default function FirebaseSetup({ onConfigured }: FirebaseSetupProps) {
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+              <label
+                htmlFor="fb-storage-bucket"
+                className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1"
+              >
                 Storage Bucket
               </label>
               <input
+                id="fb-storage-bucket"
                 type="text"
                 value={storageBucket}
                 onChange={(e) => setStorageBucket(e.target.value)}
@@ -219,10 +259,14 @@ export default function FirebaseSetup({ onConfigured }: FirebaseSetupProps) {
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+              <label
+                htmlFor="fb-messaging-sender-id"
+                className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1"
+              >
                 Messaging Sender ID
               </label>
               <input
+                id="fb-messaging-sender-id"
                 type="text"
                 value={messagingSenderId}
                 onChange={(e) => setMessagingSenderId(e.target.value)}

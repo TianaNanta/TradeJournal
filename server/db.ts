@@ -1,4 +1,4 @@
-import { Database } from "bun:sqlite";
+import { Database } from 'bun:sqlite';
 
 export interface TradeInput {
   symbol: string;
@@ -30,7 +30,7 @@ export interface DbTrade {
   created_at: string;
 }
 
-const db = new Database("trades.db", { create: true });
+const db = new Database('trades.db', { create: true });
 
 export function initDb(): void {
   db.query(`
@@ -56,7 +56,7 @@ export function initDb(): void {
 function parseExitPrice(val: unknown): number | null {
   if (val === undefined || val === null || val === '') return null;
   const num = Number(val);
-  return isNaN(num) ? null : num;
+  return Number.isNaN(num) ? null : num;
 }
 
 function parseExitDate(val: unknown): string | null {
@@ -78,10 +78,10 @@ export function createTrade(tradeData: TradeInput): DbTrade {
   const fee = Number(tradeData.fee ?? 0);
   const quantity = Number(tradeData.quantity);
   const entry_price = Number(tradeData.entry_price);
-  
+
   let pnl = 0;
   let status: 'OPEN' | 'CLOSED' = 'OPEN';
-  
+
   if (exit_price !== null) {
     status = 'CLOSED';
     if (tradeData.type === 'LONG') {
@@ -94,32 +94,34 @@ export function createTrade(tradeData: TradeInput): DbTrade {
     pnl = -fee;
   }
 
-  const result = db.query(`
+  const result = db
+    .query(`
     INSERT INTO trades (symbol, type, quantity, entry_price, exit_price, entry_date, exit_date, fee, status, pnl, setup, notes)
     VALUES ($symbol, $type, $quantity, $entry_price, $exit_price, $entry_date, $exit_date, $fee, $status, $pnl, $setup, $notes)
     RETURNING id
-  `).get({
-    $symbol: tradeData.symbol.toUpperCase(),
-    $type: tradeData.type,
-    $quantity: quantity,
-    $entry_price: entry_price,
-    $exit_price: exit_price,
-    $entry_date: tradeData.entry_date,
-    $exit_date: exit_date,
-    $fee: fee,
-    $status: status,
-    $pnl: pnl,
-    $setup: tradeData.setup || null,
-    $notes: tradeData.notes || null
-  }) as { id: number } | null;
+  `)
+    .get({
+      $symbol: tradeData.symbol.toUpperCase(),
+      $type: tradeData.type,
+      $quantity: quantity,
+      $entry_price: entry_price,
+      $exit_price: exit_price,
+      $entry_date: tradeData.entry_date,
+      $exit_date: exit_date,
+      $fee: fee,
+      $status: status,
+      $pnl: pnl,
+      $setup: tradeData.setup || null,
+      $notes: tradeData.notes || null,
+    }) as { id: number } | null;
 
   if (!result) {
-    throw new Error("Failed to insert trade");
+    throw new Error('Failed to insert trade');
   }
 
   const inserted = getTrade(result.id);
   if (!inserted) {
-    throw new Error("Failed to retrieve inserted trade");
+    throw new Error('Failed to retrieve inserted trade');
   }
   return inserted;
 }
@@ -130,7 +132,7 @@ export function updateTrade(id: number, tradeData: Partial<TradeInput>): DbTrade
 
   const merged = {
     ...existing,
-    ...tradeData
+    ...tradeData,
   };
 
   const exit_price = parseExitPrice(tradeData.exit_price !== undefined ? tradeData.exit_price : existing.exit_price);
@@ -182,7 +184,7 @@ export function updateTrade(id: number, tradeData: Partial<TradeInput>): DbTrade
     $status: status,
     $pnl: pnl,
     $setup: merged.setup || null,
-    $notes: merged.notes || null
+    $notes: merged.notes || null,
   });
 
   return getTrade(id);
@@ -195,7 +197,7 @@ export function deleteTrade(id: number): boolean {
 
 export function getStats() {
   const trades = getTrades();
-  
+
   let totalNetPnL = 0;
   const totalTrades = trades.length;
   let openTrades = 0;
@@ -204,13 +206,13 @@ export function getStats() {
   let lossesCount = 0;
   let sumWinPnL = 0;
   let sumLossPnL = 0;
-  
+
   const setupPnLMap = new Map<string, { pnl: number; count: number }>();
   const datePnLMap = new Map<string, number>();
 
   for (const t of trades) {
     totalNetPnL += t.pnl;
-    
+
     if (t.status === 'OPEN') {
       openTrades++;
     } else {
@@ -223,12 +225,12 @@ export function getStats() {
         sumLossPnL += t.pnl;
       }
     }
-    
-    const setupName = t.setup?.trim() || "No Setup";
+
+    const setupName = t.setup?.trim() || 'No Setup';
     const currentSetup = setupPnLMap.get(setupName) || { pnl: 0, count: 0 };
     setupPnLMap.set(setupName, {
       pnl: currentSetup.pnl + t.pnl,
-      count: currentSetup.count + 1
+      count: currentSetup.count + 1,
     });
 
     const rawDate = t.exit_date || t.entry_date;
@@ -237,19 +239,19 @@ export function getStats() {
   }
 
   const winRate = closedTradesCount > 0 ? (winsCount / closedTradesCount) * 100 : 0;
-  
+
   const absLossPnL = Math.abs(sumLossPnL);
   const profitFactor = absLossPnL > 0 ? sumWinPnL / absLossPnL : totalNetPnL;
-  
+
   const avgWin = winsCount > 0 ? sumWinPnL / winsCount : 0;
   const avgLoss = lossesCount > 0 ? sumLossPnL / lossesCount : 0;
 
   const sortedDates = Array.from(datePnLMap.keys())
-    .filter(d => d !== 'Unknown')
+    .filter((d) => d !== 'Unknown')
     .sort((a, b) => a.localeCompare(b));
 
   let cumulativePnLAccum = 0;
-  const cumulativePnL = sortedDates.map(date => {
+  const cumulativePnL = sortedDates.map((date) => {
     cumulativePnLAccum += datePnLMap.get(date) || 0;
     return { date, pnl: Number(cumulativePnLAccum.toFixed(2)) };
   });
@@ -257,12 +259,12 @@ export function getStats() {
   const pnlBySetup = Array.from(setupPnLMap.entries()).map(([setup, data]) => ({
     setup,
     pnl: Number(data.pnl.toFixed(2)),
-    count: data.count
+    count: data.count,
   }));
 
   const winLossCount = [
     { name: 'Wins', value: winsCount },
-    { name: 'Losses', value: lossesCount }
+    { name: 'Losses', value: lossesCount },
   ];
 
   return {
@@ -275,6 +277,6 @@ export function getStats() {
     avgLoss: Number(avgLoss.toFixed(2)),
     cumulativePnL,
     pnlBySetup,
-    winLossCount
+    winLossCount,
   };
 }

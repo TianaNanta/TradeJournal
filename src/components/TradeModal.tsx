@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, AlertCircle } from 'lucide-react';
+import { AlertCircle, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type { Trade } from '../types';
 import { api } from '../utils/api';
 
@@ -12,13 +12,24 @@ interface TradeModalProps {
   currency?: string;
 }
 
-export default function TradeModal({ trade, onClose, onRefresh, userId, accountId, currency = 'USD' }: TradeModalProps) {
+export default function TradeModal({
+  trade,
+  onClose,
+  onRefresh,
+  userId,
+  accountId,
+  currency = 'USD',
+}: TradeModalProps) {
   const getCurrencySymbol = (curr: string) => {
     switch (curr) {
-      case 'EUR': return '€';
-      case 'GBP': return '£';
-      case 'JPY': return '¥';
-      default: return '$';
+      case 'EUR':
+        return '€';
+      case 'GBP':
+        return '£';
+      case 'JPY':
+        return '¥';
+      default:
+        return '$';
     }
   };
   const cSymbol = getCurrencySymbol(currency);
@@ -62,8 +73,8 @@ export default function TradeModal({ trade, onClose, onRefresh, userId, accountI
 
   const handleExitPriceChange = (value: string) => {
     setExitPrice(value);
-    if (value === "") {
-      setExitDate("");
+    if (value === '') {
+      setExitDate('');
     } else if (!exitDate) {
       // Set to current date/time or entry date if empty
       const now = new Date();
@@ -81,48 +92,48 @@ export default function TradeModal({ trade, onClose, onRefresh, userId, accountI
     setValidationError(null);
 
     if (!symbol.trim()) {
-      setValidationError("Symbol is required.");
+      setValidationError('Symbol is required.');
       return;
     }
     const qty = Number(quantity);
-    if (isNaN(qty) || qty <= 0) {
-      setValidationError("Quantity must be greater than 0.");
+    if (Number.isNaN(qty) || qty <= 0) {
+      setValidationError('Quantity must be greater than 0.');
       return;
     }
     const entryP = Number(entryPrice);
-    if (isNaN(entryP) || entryP <= 0) {
-      setValidationError("Entry price must be greater than 0.");
+    if (Number.isNaN(entryP) || entryP <= 0) {
+      setValidationError('Entry price must be greater than 0.');
       return;
     }
     if (!entryDate) {
-      setValidationError("Entry date is required.");
+      setValidationError('Entry date is required.');
       return;
     }
 
-    const hasExitPrice = exitPrice.trim() !== "";
+    const hasExitPrice = exitPrice.trim() !== '';
     let finalExitPrice: number | null = null;
     let finalExitDate: string | null = null;
 
     if (hasExitPrice) {
       finalExitPrice = Number(exitPrice);
-      if (isNaN(finalExitPrice) || finalExitPrice <= 0) {
-        setValidationError("Exit price must be greater than 0.");
+      if (Number.isNaN(finalExitPrice) || finalExitPrice <= 0) {
+        setValidationError('Exit price must be greater than 0.');
         return;
       }
       if (!exitDate) {
-        setValidationError("Exit date is required when exit price is set.");
+        setValidationError('Exit date is required when exit price is set.');
         return;
       }
       if (new Date(exitDate) <= new Date(entryDate)) {
-        setValidationError("Exit date must be after entry date.");
+        setValidationError('Exit date must be after entry date.');
         return;
       }
       finalExitDate = exitDate;
     }
 
     const feeVal = Number(fee);
-    if (isNaN(feeVal) || feeVal < 0) {
-      setValidationError("Fee must be 0 or a positive number.");
+    if (Number.isNaN(feeVal) || feeVal < 0) {
+      setValidationError('Fee must be 0 or a positive number.');
       return;
     }
 
@@ -149,7 +160,7 @@ export default function TradeModal({ trade, onClose, onRefresh, userId, accountI
       onClose();
     } catch (err) {
       console.error(err);
-      setValidationError("Failed to save trade. Please check server logs.");
+      setValidationError('Failed to save trade. Please check server logs.');
     }
   };
 
@@ -158,9 +169,7 @@ export default function TradeModal({ trade, onClose, onRefresh, userId, accountI
       <div className="bg-brand-card border border-brand-border w-full max-w-xl rounded-xl shadow-2xl overflow-hidden my-8">
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border">
-          <h2 className="text-lg font-bold">
-            {trade ? `Edit ${trade.symbol} Trade` : 'Add New Trade'}
-          </h2>
+          <h2 className="text-lg font-bold">{trade ? `Edit ${trade.symbol} Trade` : 'Add New Trade'}</h2>
           <button
             onClick={onClose}
             className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-brand-border transition-colors"
@@ -181,9 +190,7 @@ export default function TradeModal({ trade, onClose, onRefresh, userId, accountI
           <div className="grid grid-cols-2 gap-4">
             {/* Symbol */}
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                Symbol
-              </label>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Symbol</label>
               <input
                 type="text"
                 required
@@ -204,9 +211,7 @@ export default function TradeModal({ trade, onClose, onRefresh, userId, accountI
                   type="button"
                   onClick={() => setType('LONG')}
                   className={`py-1.5 rounded-md text-xs font-bold transition-colors ${
-                    type === 'LONG'
-                      ? 'bg-brand-success text-white'
-                      : 'text-slate-400 hover:text-slate-200'
+                    type === 'LONG' ? 'bg-brand-success text-white' : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   LONG
@@ -215,9 +220,7 @@ export default function TradeModal({ trade, onClose, onRefresh, userId, accountI
                   type="button"
                   onClick={() => setType('SHORT')}
                   className={`py-1.5 rounded-md text-xs font-bold transition-colors ${
-                    type === 'SHORT'
-                      ? 'bg-brand-danger text-white'
-                      : 'text-slate-400 hover:text-slate-200'
+                    type === 'SHORT' ? 'bg-brand-danger text-white' : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   SHORT
@@ -293,8 +296,10 @@ export default function TradeModal({ trade, onClose, onRefresh, userId, accountI
           </div>
 
           <div className="border-t border-brand-border pt-4 mt-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Exit Specifications (Optional)</h4>
-            
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+              Exit Specifications (Optional)
+            </h4>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Exit Price */}
               <div>
@@ -319,7 +324,7 @@ export default function TradeModal({ trade, onClose, onRefresh, userId, accountI
                 </label>
                 <input
                   type="datetime-local"
-                  disabled={exitPrice.trim() === ""}
+                  disabled={exitPrice.trim() === ''}
                   value={exitDate}
                   onChange={(e) => setExitDate(e.target.value)}
                   className="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-primary text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed"

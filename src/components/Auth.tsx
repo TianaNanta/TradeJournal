@@ -1,7 +1,7 @@
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { AlertCircle, Key, Lock, LogIn, Mail, RefreshCw, UserPlus } from 'lucide-react';
 import { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { getFirebaseAuth, googleProvider, clearFirebaseConfig } from '../utils/firebase';
-import { Mail, Lock, LogIn, UserPlus, AlertCircle, Key, RefreshCw } from 'lucide-react';
+import { clearFirebaseConfig, getFirebaseAuth, googleProvider } from '../utils/firebase';
 
 interface AuthProps {
   onResetConfig: () => void;
@@ -12,7 +12,7 @@ export default function Auth({ onResetConfig }: AuthProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -45,19 +45,19 @@ export default function Auth({ onResetConfig }: AuthProps) {
     setLoading(true);
 
     if (!email || !password) {
-      setError("Please fill out all fields.");
+      setError('Please fill out all fields.');
       setLoading(false);
       return;
     }
 
     if (isSignUp) {
       if (password !== confirmPassword) {
-        setError("Passwords do not match.");
+        setError('Passwords do not match.');
         setLoading(false);
         return;
       }
       if (password.length < 6) {
-        setError("Password must be at least 6 characters.");
+        setError('Password must be at least 6 characters.');
         setLoading(false);
         return;
       }
@@ -70,9 +70,10 @@ export default function Auth({ onResetConfig }: AuthProps) {
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(getFriendlyErrorMessage(err.code || ''));
+      const errorCode = (err as { code?: string }).code || '';
+      setError(getFriendlyErrorMessage(errorCode));
     } finally {
       setLoading(false);
     }
@@ -84,10 +85,11 @@ export default function Auth({ onResetConfig }: AuthProps) {
     try {
       const auth = getFirebaseAuth();
       await signInWithPopup(auth, googleProvider);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      if (err.code !== 'auth/popup-closed-by-user') {
-        setError(getFriendlyErrorMessage(err.code || ''));
+      const errorCode = (err as { code?: string }).code || '';
+      if (errorCode !== 'auth/popup-closed-by-user') {
+        setError(getFriendlyErrorMessage(errorCode));
       }
     } finally {
       setLoading(false);
@@ -95,7 +97,11 @@ export default function Auth({ onResetConfig }: AuthProps) {
   };
 
   const handleResetConfig = () => {
-    if (window.confirm("Are you sure you want to disconnect from this Firebase project? You will need to re-enter your config credentials.")) {
+    if (
+      window.confirm(
+        'Are you sure you want to disconnect from this Firebase project? You will need to re-enter your config credentials.',
+      )
+    ) {
       clearFirebaseConfig();
       onResetConfig();
     }
@@ -118,17 +124,29 @@ export default function Auth({ onResetConfig }: AuthProps) {
         {/* Auth Mode Toggle */}
         <div className="flex border-b border-brand-border">
           <button
-            onClick={() => { setIsSignUp(false); setError(null); }}
+            type="button"
+            onClick={() => {
+              setIsSignUp(false);
+              setError(null);
+            }}
             className={`flex-1 pb-2.5 text-sm font-semibold border-b-2 transition-colors ${
-              !isSignUp ? 'border-brand-primary text-brand-primary' : 'border-transparent text-slate-400 hover:text-slate-200'
+              !isSignUp
+                ? 'border-brand-primary text-brand-primary'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             Sign In
           </button>
           <button
-            onClick={() => { setIsSignUp(true); setError(null); }}
+            type="button"
+            onClick={() => {
+              setIsSignUp(true);
+              setError(null);
+            }}
             className={`flex-1 pb-2.5 text-sm font-semibold border-b-2 transition-colors ${
-              isSignUp ? 'border-brand-primary text-brand-primary' : 'border-transparent text-slate-400 hover:text-slate-200'
+              isSignUp
+                ? 'border-brand-primary text-brand-primary'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             Create Account
@@ -145,12 +163,16 @@ export default function Auth({ onResetConfig }: AuthProps) {
         {/* Email & Password Form */}
         <form onSubmit={handleEmailAuth} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+            <label
+              htmlFor="auth-email"
+              className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5"
+            >
               Email Address
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
               <input
+                id="auth-email"
                 type="email"
                 required
                 value={email}
@@ -162,12 +184,16 @@ export default function Auth({ onResetConfig }: AuthProps) {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+            <label
+              htmlFor="auth-password"
+              className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5"
+            >
               Password
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
               <input
+                id="auth-password"
                 type="password"
                 required
                 value={password}
@@ -180,12 +206,16 @@ export default function Auth({ onResetConfig }: AuthProps) {
 
           {isSignUp && (
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+              <label
+                htmlFor="auth-confirm-password"
+                className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5"
+              >
                 Confirm Password
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
                 <input
+                  id="auth-confirm-password"
                   type="password"
                   required
                   value={confirmPassword}
@@ -224,12 +254,14 @@ export default function Auth({ onResetConfig }: AuthProps) {
 
         {/* Google Sign-In */}
         <button
+          type="button"
           onClick={handleGoogleSignIn}
           disabled={loading}
           className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-900 font-semibold py-2 rounded-lg text-sm transition-colors border border-slate-200"
         >
           {/* Google Icon G SVG */}
           <svg className="w-4 h-4 mr-1 flex-shrink-0" viewBox="0 0 24 24">
+            <title>Google</title>
             <path
               fill="#4285F4"
               d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.927h6.6c-.285 1.514-1.14 2.8-2.43 3.66v3.048h3.915c2.29-2.113 3.66-5.22 3.66-8.565z"
@@ -253,6 +285,7 @@ export default function Auth({ onResetConfig }: AuthProps) {
         {/* Footer actions */}
         <div className="pt-4 border-t border-brand-border text-center">
           <button
+            type="button"
             onClick={handleResetConfig}
             className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-primary transition-colors focus:outline-none"
           >

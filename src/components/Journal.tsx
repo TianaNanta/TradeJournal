@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, ChevronUp, Edit, Filter, Plus, Search, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Trade } from '../types';
 import { api } from '../utils/api';
+import { formatCurrency } from '../utils/format';
 import TradeModal from './TradeModal';
 
 interface JournalProps {
@@ -13,19 +14,6 @@ interface JournalProps {
 }
 
 export default function Journal({ trades, onRefresh, userId, accountId, currency = 'USD' }: JournalProps) {
-  const formatCurrency = (value: number) => {
-    const formatted = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(Math.abs(value));
-    if (value > 0) {
-      return `+${formatted}`;
-    }
-    if (value < 0) {
-      return `-${formatted}`;
-    }
-    return formatted;
-  };
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'CLOSED'>('ALL');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'LONG' | 'SHORT'>('ALL');
@@ -42,22 +30,22 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
 
   // Get dynamic unique setups list
   const uniqueSetups = useMemo(() => {
-    const list = trades.map(t => t.setup?.trim()).filter(Boolean) as string[];
+    const list = trades.map((t) => t.setup?.trim()).filter(Boolean) as string[];
     return Array.from(new Set(list));
   }, [trades]);
 
   // Filtered & Sorted Trades
   const processedTrades = useMemo(() => {
-    const filtered = trades.filter(t => {
-      const matchesSearch = t.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (t.notes && t.notes.toLowerCase().includes(searchQuery.toLowerCase()));
+    const filtered = trades.filter((t) => {
+      const matchesSearch =
+        t.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.notes?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === 'ALL' || t.status === statusFilter;
       const matchesType = typeFilter === 'ALL' || t.type === typeFilter;
-      
+
       const tradeSetup = t.setup?.trim() || '';
-      const matchesSetup = setupFilter === 'ALL' || 
-        (setupFilter === 'No Setup' && !tradeSetup) || 
-        tradeSetup === setupFilter;
+      const matchesSetup =
+        setupFilter === 'ALL' || (setupFilter === 'No Setup' && !tradeSetup) || tradeSetup === setupFilter;
 
       return matchesSearch && matchesStatus && matchesType && matchesSetup;
     });
@@ -86,9 +74,9 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
   }, [trades, searchQuery, statusFilter, typeFilter, setupFilter, sortField, sortOrder]);
 
   // Reset pagination on filter change
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, typeFilter, setupFilter]);
+  }, []);
 
   // Pagination calculations
   const totalItems = processedTrades.length;
@@ -96,11 +84,11 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedTrades = useMemo(() => {
     return processedTrades.slice(startIndex, startIndex + pageSize);
-  }, [processedTrades, startIndex, pageSize]);
+  }, [processedTrades, startIndex]);
 
   const handleSort = (field: 'entry_date' | 'pnl') => {
     if (sortField === field) {
-      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortField(field);
       setSortOrder('desc');
@@ -108,13 +96,13 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this trade? This action cannot be undone.")) {
+    if (window.confirm('Are you sure you want to delete this trade? This action cannot be undone.')) {
       try {
         await api.deleteTrade(userId, accountId, id);
         onRefresh();
       } catch (err) {
         console.error(err);
-        alert("Failed to delete trade.");
+        alert('Failed to delete trade.');
       }
     }
   };
@@ -168,9 +156,15 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
               onChange={(e) => setStatusFilter(e.target.value as 'ALL' | 'OPEN' | 'CLOSED')}
               className="bg-transparent w-full focus:outline-none cursor-pointer text-slate-200"
             >
-              <option value="ALL" className="bg-brand-card">All Statuses</option>
-              <option value="OPEN" className="bg-brand-card">Open Trades</option>
-              <option value="CLOSED" className="bg-brand-card">Closed Trades</option>
+              <option value="ALL" className="bg-brand-card">
+                All Statuses
+              </option>
+              <option value="OPEN" className="bg-brand-card">
+                Open Trades
+              </option>
+              <option value="CLOSED" className="bg-brand-card">
+                Closed Trades
+              </option>
             </select>
           </div>
 
@@ -182,9 +176,15 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
               onChange={(e) => setTypeFilter(e.target.value as 'ALL' | 'LONG' | 'SHORT')}
               className="bg-transparent w-full focus:outline-none cursor-pointer text-slate-200"
             >
-              <option value="ALL" className="bg-brand-card">All Types</option>
-              <option value="LONG" className="bg-brand-card">LONG</option>
-              <option value="SHORT" className="bg-brand-card">SHORT</option>
+              <option value="ALL" className="bg-brand-card">
+                All Types
+              </option>
+              <option value="LONG" className="bg-brand-card">
+                LONG
+              </option>
+              <option value="SHORT" className="bg-brand-card">
+                SHORT
+              </option>
             </select>
           </div>
         </div>
@@ -194,7 +194,9 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
           <button
             onClick={() => setSetupFilter('ALL')}
             className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-              setupFilter === 'ALL' ? 'bg-brand-primary text-white' : 'bg-brand-dark text-slate-400 border border-brand-border hover:text-slate-200'
+              setupFilter === 'ALL'
+                ? 'bg-brand-primary text-white'
+                : 'bg-brand-dark text-slate-400 border border-brand-border hover:text-slate-200'
             }`}
           >
             All Setups
@@ -202,17 +204,21 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
           <button
             onClick={() => setSetupFilter('No Setup')}
             className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-              setupFilter === 'No Setup' ? 'bg-brand-primary text-white' : 'bg-brand-dark text-slate-400 border border-brand-border hover:text-slate-200'
+              setupFilter === 'No Setup'
+                ? 'bg-brand-primary text-white'
+                : 'bg-brand-dark text-slate-400 border border-brand-border hover:text-slate-200'
             }`}
           >
             No Setup
           </button>
-          {uniqueSetups.map(setup => (
+          {uniqueSetups.map((setup) => (
             <button
               key={setup}
               onClick={() => setSetupFilter(setup)}
               className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-                setupFilter === setup ? 'bg-brand-primary text-white' : 'bg-brand-dark text-slate-400 border border-brand-border hover:text-slate-200'
+                setupFilter === setup
+                  ? 'bg-brand-primary text-white'
+                  : 'bg-brand-dark text-slate-400 border border-brand-border hover:text-slate-200'
               }`}
             >
               {setup}
@@ -235,11 +241,18 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-brand-border bg-brand-dark/30 text-slate-400 text-xs font-semibold uppercase select-none">
-                    <th className="py-4 px-4 cursor-pointer hover:text-slate-200" onClick={() => handleSort('entry_date')}>
+                    <th
+                      className="py-4 px-4 cursor-pointer hover:text-slate-200"
+                      onClick={() => handleSort('entry_date')}
+                    >
                       <div className="flex items-center gap-1">
                         Date
                         {sortField === 'entry_date' ? (
-                          sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
+                          sortOrder === 'asc' ? (
+                            <ChevronUp size={14} />
+                          ) : (
+                            <ChevronDown size={14} />
+                          )
                         ) : (
                           <ArrowUpDown size={12} className="text-slate-500" />
                         )}
@@ -252,11 +265,18 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
                     <th className="py-4 px-4 text-right">Entry</th>
                     <th className="py-4 px-4 text-right">Exit</th>
                     <th className="py-4 px-4 text-right">Fee</th>
-                    <th className="py-4 px-4 cursor-pointer hover:text-slate-200 text-right" onClick={() => handleSort('pnl')}>
+                    <th
+                      className="py-4 px-4 cursor-pointer hover:text-slate-200 text-right"
+                      onClick={() => handleSort('pnl')}
+                    >
                       <div className="flex items-center justify-end gap-1">
                         PnL
                         {sortField === 'pnl' ? (
-                          sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
+                          sortOrder === 'asc' ? (
+                            <ChevronUp size={14} />
+                          ) : (
+                            <ChevronDown size={14} />
+                          )
                         ) : (
                           <ArrowUpDown size={12} className="text-slate-500" />
                         )}
@@ -269,33 +289,44 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
                   {paginatedTrades.map((trade) => (
                     <tr key={trade.id} className="hover:bg-brand-border/20 transition-colors">
                       <td className="py-3 px-4 text-slate-400 whitespace-nowrap">
-                        {trade.entry_date.split('T')[0]} <span className="text-xs">{trade.entry_date.split('T')[1] || ''}</span>
+                        {trade.entry_date.split('T')[0]}{' '}
+                        <span className="text-xs">{trade.entry_date.split('T')[1] || ''}</span>
                       </td>
                       <td className="py-3 px-4 font-bold uppercase">{trade.symbol}</td>
                       <td className="py-3 px-4 text-center">
-                        <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
-                          trade.type === 'LONG' ? 'bg-brand-success/15 text-brand-success' : 'bg-brand-danger/15 text-brand-danger'
-                        }`}>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                            trade.type === 'LONG'
+                              ? 'bg-brand-success/15 text-brand-success'
+                              : 'bg-brand-danger/15 text-brand-danger'
+                          }`}
+                        >
                           {trade.type}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
-                          trade.status === 'OPEN' ? 'bg-blue-500/15 text-blue-400' : 'bg-slate-500/15 text-slate-400'
-                        }`}>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                            trade.status === 'OPEN' ? 'bg-blue-500/15 text-blue-400' : 'bg-slate-500/15 text-slate-400'
+                          }`}
+                        >
                           {trade.status}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right text-slate-300 font-mono">{trade.quantity}</td>
                       <td className="py-3 px-4 text-right text-slate-300 font-mono">${trade.entry_price.toFixed(2)}</td>
                       <td className="py-3 px-4 text-right text-slate-300 font-mono">
-                        {trade.exit_price !== null && trade.exit_price !== undefined ? `$${trade.exit_price.toFixed(2)}` : '—'}
+                        {trade.exit_price !== null && trade.exit_price !== undefined
+                          ? `$${trade.exit_price.toFixed(2)}`
+                          : '—'}
                       </td>
                       <td className="py-3 px-4 text-right text-slate-400 font-mono">${trade.fee.toFixed(2)}</td>
-                      <td className={`py-3 px-4 text-right font-bold font-mono ${
-                        trade.pnl > 0 ? 'text-brand-success' : trade.pnl < 0 ? 'text-brand-danger' : 'text-slate-400'
-                      }`}>
-                        {formatCurrency(trade.pnl)}
+                      <td
+                        className={`py-3 px-4 text-right font-bold font-mono ${
+                          trade.pnl > 0 ? 'text-brand-success' : trade.pnl < 0 ? 'text-brand-danger' : 'text-slate-400'
+                        }`}
+                      >
+                        {formatCurrency(trade.pnl, currency)}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <div className="flex items-center justify-center gap-2">
@@ -328,33 +359,57 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                       <span className="font-bold uppercase text-base">{trade.symbol}</span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                        trade.type === 'LONG' ? 'bg-brand-success/15 text-brand-success' : 'bg-brand-danger/15 text-brand-danger'
-                      }`}>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                          trade.type === 'LONG'
+                            ? 'bg-brand-success/15 text-brand-success'
+                            : 'bg-brand-danger/15 text-brand-danger'
+                        }`}
+                      >
                         {trade.type}
                       </span>
                     </div>
-                    <span className={`text-base font-bold font-mono ${
-                      trade.pnl > 0 ? 'text-brand-success' : trade.pnl < 0 ? 'text-brand-danger' : 'text-slate-400'
-                    }`}>
-                      {formatCurrency(trade.pnl)}
+                    <span
+                      className={`text-base font-bold font-mono ${
+                        trade.pnl > 0 ? 'text-brand-success' : trade.pnl < 0 ? 'text-brand-danger' : 'text-slate-400'
+                      }`}
+                    >
+                      {formatCurrency(trade.pnl, currency)}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-y-1 text-xs text-slate-400">
-                    <div>Entry Date: <span className="text-slate-200">{trade.entry_date.split('T')[0]}</span></div>
-                    <div className="text-right">Status: <span className={`font-semibold ${trade.status === 'OPEN' ? 'text-blue-400' : 'text-slate-400'}`}>{trade.status}</span></div>
-                    <div>Qty / Price: <span className="text-slate-200">{trade.quantity} @ ${trade.entry_price.toFixed(2)}</span></div>
+                    <div>
+                      Entry Date: <span className="text-slate-200">{trade.entry_date.split('T')[0]}</span>
+                    </div>
                     <div className="text-right">
-                      Exit: <span className="text-slate-200">
-                        {trade.exit_price !== null && trade.exit_price !== undefined ? `$${trade.exit_price.toFixed(2)}` : '—'}
+                      Status:{' '}
+                      <span className={`font-semibold ${trade.status === 'OPEN' ? 'text-blue-400' : 'text-slate-400'}`}>
+                        {trade.status}
+                      </span>
+                    </div>
+                    <div>
+                      Qty / Price:{' '}
+                      <span className="text-slate-200">
+                        {trade.quantity} @ ${trade.entry_price.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      Exit:{' '}
+                      <span className="text-slate-200">
+                        {trade.exit_price !== null && trade.exit_price !== undefined
+                          ? `$${trade.exit_price.toFixed(2)}`
+                          : '—'}
                       </span>
                     </div>
                   </div>
 
                   {trade.setup && (
                     <div className="text-xs">
-                      Setup: <span className="px-2 py-0.5 rounded bg-brand-border text-slate-300 font-semibold">{trade.setup}</span>
+                      Setup:{' '}
+                      <span className="px-2 py-0.5 rounded bg-brand-border text-slate-300 font-semibold">
+                        {trade.setup}
+                      </span>
                     </div>
                   )}
 
@@ -384,7 +439,7 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
               <div className="flex items-center gap-2">
                 <button
                   disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   className="px-3 py-1.5 rounded bg-brand-border text-xs font-semibold text-slate-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Previous
@@ -394,7 +449,7 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
                 </span>
                 <button
                   disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                   className="px-3 py-1.5 rounded bg-brand-border text-xs font-semibold text-slate-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Next

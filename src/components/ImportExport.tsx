@@ -1,5 +1,5 @@
+import { AlertCircle, CheckCircle, Database, Download, FileText, Upload } from 'lucide-react';
 import { useState } from 'react';
-import { Download, Upload, Database, AlertCircle, CheckCircle, FileText } from 'lucide-react';
 import type { Trade } from '../types';
 import { api } from '../utils/api';
 
@@ -15,42 +15,57 @@ export default function ImportExport({ trades, onImportSuccess, userId, accountI
   const [pastedCSV, setPastedCSV] = useState('');
 
   const handleExportJSON = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(trades, null, 2));
+    const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(trades, null, 2))}`;
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `trades_export_${new Date().toISOString().split('T')[0]}.json`);
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `trades_export_${new Date().toISOString().split('T')[0]}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
   };
 
   const handleExportCSV = () => {
-    const headers = ["symbol", "type", "quantity", "entry_price", "exit_price", "entry_date", "exit_date", "fee", "setup", "notes"];
-    const rows = trades.map(t => [
-      t.symbol,
-      t.type,
-      t.quantity,
-      t.entry_price,
-      t.exit_price ?? "",
-      t.entry_date,
-      t.exit_date ?? "",
-      t.fee,
-      t.setup ?? "",
-      t.notes ?? ""
-    ].map(val => {
-      const strVal = String(val);
-      if (strVal.includes(",") || strVal.includes('"') || strVal.includes("\n")) {
-        return `"${strVal.replace(/"/g, '""')}"`;
-      }
-      return strVal;
-    }).join(","));
+    const headers = [
+      'symbol',
+      'type',
+      'quantity',
+      'entry_price',
+      'exit_price',
+      'entry_date',
+      'exit_date',
+      'fee',
+      'setup',
+      'notes',
+    ];
+    const rows = trades.map((t) =>
+      [
+        t.symbol,
+        t.type,
+        t.quantity,
+        t.entry_price,
+        t.exit_price ?? '',
+        t.entry_date,
+        t.exit_date ?? '',
+        t.fee,
+        t.setup ?? '',
+        t.notes ?? '',
+      ]
+        .map((val) => {
+          const strVal = String(val);
+          if (strVal.includes(',') || strVal.includes('"') || strVal.includes('\n')) {
+            return `"${strVal.replace(/"/g, '""')}"`;
+          }
+          return strVal;
+        })
+        .join(','),
+    );
 
-    const csvContent = [headers.join(","), ...rows].join("\n");
+    const csvContent = [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", url);
-    downloadAnchor.setAttribute("download", `trades_export_${new Date().toISOString().split('T')[0]}.csv`);
+    downloadAnchor.setAttribute('href', url);
+    downloadAnchor.setAttribute('download', `trades_export_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -60,20 +75,20 @@ export default function ImportExport({ trades, onImportSuccess, userId, accountI
   const processCSV = async (csvText: string) => {
     setImportStatus(null);
     try {
-      const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
+      const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
       if (lines.length < 2) {
-        setImportStatus({ type: 'error', message: "CSV file is empty or missing headers." });
+        setImportStatus({ type: 'error', message: 'CSV file is empty or missing headers.' });
         return;
       }
-      
+
       const firstLine = lines[0];
-      const headers = firstLine.split(",").map(h => h.trim().toLowerCase());
-      
-      const required = ["symbol", "type", "quantity", "entry_price", "entry_date"];
-      const missing = required.filter(h => !headers.includes(h));
-      
+      const headers = firstLine.split(',').map((h) => h.trim().toLowerCase());
+
+      const required = ['symbol', 'type', 'quantity', 'entry_price', 'entry_date'];
+      const missing = required.filter((h) => !headers.includes(h));
+
       if (missing.length > 0) {
-        setImportStatus({ type: 'error', message: `Missing required CSV columns: ${missing.join(", ")}` });
+        setImportStatus({ type: 'error', message: `Missing required CSV columns: ${missing.join(', ')}` });
         return;
       }
 
@@ -83,11 +98,11 @@ export default function ImportExport({ trades, onImportSuccess, userId, accountI
         setPastedCSV('');
         onImportSuccess();
       } else {
-        setImportStatus({ type: 'error', message: "Import completed but 0 trades were processed. Check row format." });
+        setImportStatus({ type: 'error', message: 'Import completed but 0 trades were processed. Check row format.' });
       }
     } catch (err: unknown) {
       console.error(err);
-      setImportStatus({ type: 'error', message: "An error occurred parsing the CSV text." });
+      setImportStatus({ type: 'error', message: 'An error occurred parsing the CSV text.' });
     }
   };
 
@@ -127,10 +142,11 @@ export default function ImportExport({ trades, onImportSuccess, userId, accountI
               Export Database
             </h2>
             <p className="text-slate-400 text-sm mb-6">
-              Download your entire trading history in JSON format (ideal for importing back into TradeJournal) or standard CSV format (useful for analysis in Excel or Google Sheets).
+              Download your entire trading history in JSON format (ideal for importing back into TradeJournal) or
+              standard CSV format (useful for analysis in Excel or Google Sheets).
             </p>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-3 mt-4">
             <button
               onClick={handleExportJSON}
@@ -170,12 +186,7 @@ export default function ImportExport({ trades, onImportSuccess, userId, accountI
             <Upload size={32} className="text-slate-500 mb-2" />
             <span className="text-sm font-semibold text-slate-300">Click to upload file</span>
             <span className="text-xs text-slate-500 mt-1">Accepts standard .csv logs</span>
-            <input
-              type="file"
-              accept=".csv"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
+            <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
           </label>
         </div>
       </div>
@@ -183,7 +194,7 @@ export default function ImportExport({ trades, onImportSuccess, userId, accountI
       {/* Paste CSV Import */}
       <div className="bg-brand-card border border-brand-border rounded-xl p-6">
         <h2 className="text-base font-bold mb-4">Or Paste CSV Log Directly</h2>
-        
+
         <form onSubmit={handlePasteSubmit} className="space-y-4">
           <textarea
             rows={5}
@@ -196,15 +207,17 @@ export default function ImportExport({ trades, onImportSuccess, userId, accountI
           <div className="flex justify-between items-center">
             <div>
               {importStatus && (
-                <div className={`flex items-center gap-2 text-xs font-semibold ${
-                  importStatus.type === 'success' ? 'text-brand-success' : 'text-brand-danger'
-                }`}>
+                <div
+                  className={`flex items-center gap-2 text-xs font-semibold ${
+                    importStatus.type === 'success' ? 'text-brand-success' : 'text-brand-danger'
+                  }`}
+                >
                   {importStatus.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
                   <span>{importStatus.message}</span>
                 </div>
               )}
             </div>
-            
+
             <button
               type="submit"
               disabled={!pastedCSV.trim()}

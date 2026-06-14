@@ -1,19 +1,20 @@
+import { Activity, ArrowRight, DollarSign, Percent, Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import {
-  ResponsiveContainer,
-  LineChart,
+  Bar,
+  BarChart,
+  Cell,
+  Legend,
   Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  Legend
 } from 'recharts';
-import { DollarSign, Percent, Scale, Activity, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
 import type { DashboardStats, Trade } from '../types';
+import { formatCurrency } from '../utils/format';
 
 interface DashboardProps {
   stats: DashboardStats | null;
@@ -26,19 +27,6 @@ interface DashboardProps {
 const PIE_COLORS = ['#10B981', '#EF4444'];
 
 export default function Dashboard({ stats, trades, onViewJournal, currency = 'USD' }: DashboardProps) {
-  const formatCurrency = (value: number) => {
-    const formatted = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(Math.abs(value));
-    if (value > 0) {
-      return `+${formatted}`;
-    }
-    if (value < 0) {
-      return `-${formatted}`;
-    }
-    return formatted;
-  };
   if (!stats || stats.totalTrades === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-20 px-4">
@@ -50,6 +38,7 @@ export default function Dashboard({ stats, trades, onViewJournal, currency = 'US
           Start journaling your trades to see performance metrics, charts, and key performance indicators here.
         </p>
         <button
+          type="button"
           onClick={onViewJournal}
           className="flex items-center gap-2 bg-brand-primary hover:bg-brand-primary/95 text-white font-medium px-6 py-2.5 rounded-lg transition-colors"
         >
@@ -76,15 +65,25 @@ export default function Dashboard({ stats, trades, onViewJournal, currency = 'US
           <div className="flex justify-between items-start">
             <div>
               <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Net PnL</p>
-              <h3 className={`text-2xl font-bold mt-2 ${
-                stats.totalNetPnL > 0 ? 'text-brand-success' : stats.totalNetPnL < 0 ? 'text-brand-danger' : 'text-slate-300'
-              }`}>
-                {formatCurrency(stats.totalNetPnL)}
+              <h3
+                className={`text-2xl font-bold mt-2 ${
+                  stats.totalNetPnL > 0
+                    ? 'text-brand-success'
+                    : stats.totalNetPnL < 0
+                      ? 'text-brand-danger'
+                      : 'text-slate-300'
+                }`}
+              >
+                {formatCurrency(stats.totalNetPnL, currency)}
               </h3>
             </div>
-            <div className={`p-2 rounded-lg ${
-              stats.totalNetPnL >= 0 ? 'bg-brand-success/10 text-brand-success' : 'bg-brand-danger/10 text-brand-danger'
-            }`}>
+            <div
+              className={`p-2 rounded-lg ${
+                stats.totalNetPnL >= 0
+                  ? 'bg-brand-success/10 text-brand-success'
+                  : 'bg-brand-danger/10 text-brand-danger'
+              }`}
+            >
               <DollarSign size={20} />
             </div>
           </div>
@@ -95,9 +94,7 @@ export default function Dashboard({ stats, trades, onViewJournal, currency = 'US
           <div className="flex justify-between items-start">
             <div>
               <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Win Rate</p>
-              <h3 className="text-2xl font-bold mt-2 text-slate-100">
-                {stats.winRate}%
-              </h3>
+              <h3 className="text-2xl font-bold mt-2 text-slate-100">{stats.winRate}%</h3>
             </div>
             <div className="p-2 rounded-lg bg-brand-primary/10 text-brand-primary">
               <Percent size={20} />
@@ -116,16 +113,18 @@ export default function Dashboard({ stats, trades, onViewJournal, currency = 'US
           <div className="flex justify-between items-start">
             <div>
               <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Profit Factor</p>
-              <h3 className="text-2xl font-bold mt-2 text-slate-100">
-                {stats.profitFactor.toFixed(2)}
-              </h3>
+              <h3 className="text-2xl font-bold mt-2 text-slate-100">{stats.profitFactor.toFixed(2)}</h3>
             </div>
             <div className="p-2 rounded-lg bg-yellow-500/10 text-yellow-500">
               <Scale size={20} />
             </div>
           </div>
           <p className="text-slate-400 text-xs mt-3">
-            {stats.profitFactor >= 1.5 ? '🏆 High efficiency' : stats.profitFactor >= 1.0 ? '📈 Profitable' : '📉 Unprofitable'}
+            {stats.profitFactor >= 1.5
+              ? '🏆 High efficiency'
+              : stats.profitFactor >= 1.0
+                ? '📈 Profitable'
+                : '📉 Unprofitable'}
           </p>
         </div>
 
@@ -135,7 +134,8 @@ export default function Dashboard({ stats, trades, onViewJournal, currency = 'US
             <div>
               <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total / Open Trades</p>
               <h3 className="text-2xl font-bold mt-2 text-slate-100">
-                {stats.totalTrades} <span className="text-slate-500 text-sm font-normal">/ {stats.openTrades} open</span>
+                {stats.totalTrades}{' '}
+                <span className="text-slate-500 text-sm font-normal">/ {stats.openTrades} open</span>
               </h3>
             </div>
             <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500">
@@ -153,7 +153,7 @@ export default function Dashboard({ stats, trades, onViewJournal, currency = 'US
           </div>
           <div>
             <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Average Win</p>
-            <h4 className="text-xl font-bold text-brand-success mt-1">{formatCurrency(stats.avgWin)}</h4>
+            <h4 className="text-xl font-bold text-brand-success mt-1">{formatCurrency(stats.avgWin, currency)}</h4>
           </div>
         </div>
 
@@ -163,7 +163,7 @@ export default function Dashboard({ stats, trades, onViewJournal, currency = 'US
           </div>
           <div>
             <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Average Loss</p>
-            <h4 className="text-xl font-bold text-brand-danger mt-1">{formatCurrency(stats.avgLoss)}</h4>
+            <h4 className="text-xl font-bold text-brand-danger mt-1">{formatCurrency(stats.avgLoss, currency)}</h4>
           </div>
         </div>
       </div>
@@ -212,8 +212,8 @@ export default function Dashboard({ stats, trades, onViewJournal, currency = 'US
                     paddingAngle={4}
                     dataKey="value"
                   >
-                    {stats.winLossCount.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    {stats.winLossCount.map((entry, index) => (
+                      <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -244,8 +244,8 @@ export default function Dashboard({ stats, trades, onViewJournal, currency = 'US
                   itemStyle={{ color: '#f1f5f9' }}
                 />
                 <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
-                  {stats.pnlBySetup.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#10B981' : '#EF4444'} />
+                  {stats.pnlBySetup.map((entry) => (
+                    <Cell key={entry.setup} fill={entry.pnl >= 0 ? '#10B981' : '#EF4444'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -259,6 +259,7 @@ export default function Dashboard({ stats, trades, onViewJournal, currency = 'US
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-base font-bold">Recent Trades</h3>
           <button
+            type="button"
             onClick={onViewJournal}
             className="text-xs text-brand-primary font-semibold hover:underline flex items-center gap-1"
           >
@@ -285,23 +286,31 @@ export default function Dashboard({ stats, trades, onViewJournal, currency = 'US
                   </td>
                   <td className="py-3 px-4 font-bold uppercase">{trade.symbol}</td>
                   <td className="py-3 px-4 text-center">
-                    <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
-                      trade.type === 'LONG' ? 'bg-brand-success/15 text-brand-success' : 'bg-brand-danger/15 text-brand-danger'
-                    }`}>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                        trade.type === 'LONG'
+                          ? 'bg-brand-success/15 text-brand-success'
+                          : 'bg-brand-danger/15 text-brand-danger'
+                      }`}
+                    >
                       {trade.type}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-center">
-                    <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
-                      trade.status === 'OPEN' ? 'bg-blue-500/15 text-blue-400' : 'bg-slate-500/15 text-slate-400'
-                    }`}>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                        trade.status === 'OPEN' ? 'bg-blue-500/15 text-blue-400' : 'bg-slate-500/15 text-slate-400'
+                      }`}
+                    >
                       {trade.status}
                     </span>
                   </td>
-                  <td className={`py-3 px-4 text-right font-bold ${
-                    trade.pnl > 0 ? 'text-brand-success' : trade.pnl < 0 ? 'text-brand-danger' : 'text-slate-400'
-                  }`}>
-                    {formatCurrency(trade.pnl)}
+                  <td
+                    className={`py-3 px-4 text-right font-bold ${
+                      trade.pnl > 0 ? 'text-brand-success' : trade.pnl < 0 ? 'text-brand-danger' : 'text-slate-400'
+                    }`}
+                  >
+                    {formatCurrency(trade.pnl, currency)}
                   </td>
                 </tr>
               ))}

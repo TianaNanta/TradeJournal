@@ -1,4 +1,4 @@
-import type { Trade, DashboardStats } from "../types";
+import type { DashboardStats, Trade } from '../types';
 
 export function calculateStats(trades: Trade[]): DashboardStats {
   let totalNetPnL = 0;
@@ -29,11 +29,11 @@ export function calculateStats(trades: Trade[]): DashboardStats {
       }
     }
 
-    const setupName = t.setup?.trim() || "No Setup";
+    const setupName = t.setup?.trim() || 'No Setup';
     const currentSetup = setupPnLMap.get(setupName) || { pnl: 0, count: 0 };
     setupPnLMap.set(setupName, {
       pnl: currentSetup.pnl + t.pnl,
-      count: currentSetup.count + 1
+      count: currentSetup.count + 1,
     });
 
     const rawDate = t.exit_date || t.entry_date;
@@ -50,11 +50,11 @@ export function calculateStats(trades: Trade[]): DashboardStats {
   const avgLoss = lossesCount > 0 ? sumLossPnL / lossesCount : 0;
 
   const sortedDates = Array.from(datePnLMap.keys())
-    .filter(d => d !== 'Unknown')
+    .filter((d) => d !== 'Unknown')
     .sort((a, b) => a.localeCompare(b));
 
   let cumulativePnLAccum = 0;
-  const cumulativePnL = sortedDates.map(date => {
+  const cumulativePnL = sortedDates.map((date) => {
     cumulativePnLAccum += datePnLMap.get(date) || 0;
     return { date, pnl: Number(cumulativePnLAccum.toFixed(2)) };
   });
@@ -62,12 +62,12 @@ export function calculateStats(trades: Trade[]): DashboardStats {
   const pnlBySetup = Array.from(setupPnLMap.entries()).map(([setup, data]) => ({
     setup,
     pnl: Number(data.pnl.toFixed(2)),
-    count: data.count
+    count: data.count,
   }));
 
   const winLossCount = [
     { name: 'Wins', value: winsCount },
-    { name: 'Losses', value: lossesCount }
+    { name: 'Losses', value: lossesCount },
   ];
 
   return {
@@ -80,6 +80,6 @@ export function calculateStats(trades: Trade[]): DashboardStats {
     avgLoss: Number(avgLoss.toFixed(2)),
     cumulativePnL,
     pnlBySetup,
-    winLossCount
+    winLossCount,
   };
 }

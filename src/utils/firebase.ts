@@ -1,6 +1,6 @@
-import { initializeApp, getApps, FirebaseApp } from "firebase/app";
-import { getAuth, Auth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, Firestore } from "firebase/firestore";
+import { type FirebaseApp, getApps, initializeApp } from 'firebase/app';
+import { type Auth, GoogleAuthProvider, getAuth } from 'firebase/auth';
+import { type Firestore, getFirestore } from 'firebase/firestore';
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
@@ -29,11 +29,11 @@ export function getFirebaseConfig(): FirebaseConfig | null {
     return envConfig;
   }
 
-  const stored = localStorage.getItem("firebase_config");
+  const stored = localStorage.getItem('firebase_config');
   if (stored) {
     try {
       return JSON.parse(stored) as FirebaseConfig;
-    } catch (e) {
+    } catch (_e) {
       return null;
     }
   }
@@ -61,7 +61,7 @@ export function initFirebase(): { app: FirebaseApp; auth: Auth; db: Firestore } 
     }
     return { app, auth, db };
   } catch (err) {
-    console.error("Failed to initialize Firebase:", err);
+    console.error('Failed to initialize Firebase:', err);
     return null;
   }
 }
@@ -71,7 +71,7 @@ export function getFirebaseAuth(): Auth {
     initFirebase();
   }
   if (!auth) {
-    throw new Error("Firebase Auth is not initialized. Please configure credentials first.");
+    throw new Error('Firebase Auth is not initialized. Please configure credentials first.');
   }
   return auth;
 }
@@ -81,25 +81,25 @@ export function getFirestoreDb(): Firestore {
     initFirebase();
   }
   if (!db) {
-    throw new Error("Firestore is not initialized. Please configure credentials first.");
+    throw new Error('Firestore is not initialized. Please configure credentials first.');
   }
   return db;
 }
 
 export function saveFirebaseConfig(config: FirebaseConfig): boolean {
   try {
-    localStorage.setItem("firebase_config", JSON.stringify(config));
+    localStorage.setItem('firebase_config', JSON.stringify(config));
     // Re-initialize
     const result = initFirebase();
     return result !== null;
   } catch (e) {
-    console.error("Failed to save Firebase config:", e);
+    console.error('Failed to save Firebase config:', e);
     return false;
   }
 }
 
 export function clearFirebaseConfig(): void {
-  localStorage.removeItem("firebase_config");
+  localStorage.removeItem('firebase_config');
   app = null;
   auth = null;
   db = null;
