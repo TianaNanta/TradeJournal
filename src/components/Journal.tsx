@@ -1,5 +1,6 @@
 import { ArrowUpDown, ChevronDown, ChevronUp, Edit, Filter, Plus, Search, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 import type { Trade } from '../types';
 import { api } from '../utils/api';
 import { formatCurrency } from '../utils/format';
@@ -27,6 +28,8 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const lastDeletedTrade = useRef<Omit<Trade, 'id' | 'status' | 'pnl' | 'accountId'> | null>(null);
 
   // Get dynamic unique setups list
   const uniqueSetups = useMemo(() => {
@@ -96,14 +99,39 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this trade? This action cannot be undone.')) {
-      try {
-        await api.deleteTrade(userId, accountId, id);
-        onRefresh();
-      } catch (err) {
-        console.error(err);
-        alert('Failed to delete trade.');
-      }
+    setDeletingId(id);
+    // Find and stash the trade payload for potential undo
+    const trade = trades.find((t) => t.id === id);
+    if (trade) {
+      const { id: _id, status: _status, pnl: _pnl, accountId: _accountId, ...payload } = trade;
+      lastDeletedTrade.current = payload;
+    }
+    try {
+      await api.deleteTrade(userId, accountId, id);
+      onRefresh();
+      toast.success('Trade deleted', {
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            if (lastDeletedTrade.current) {
+              try {
+                await api.createTrade(userId, accountId, lastDeletedTrade.current);
+                onRefresh();
+                toast.success('Trade restored');
+              } catch (err) {
+                console.error(err);
+                toast.error('Failed to restore trade');
+              }
+            }
+          },
+        },
+        // biome-ignore lint/suspicious/noExplicitAny: react-hot-toast ToastOptions type doesn't expose action
+      } as any);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete trade');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -231,8 +259,17 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
       <div className="bg-brand-card border border-brand-border rounded-xl overflow-hidden">
         {totalItems === 0 ? (
           <div className="text-center py-12 text-slate-400">
-            <p className="text-base">No matching trades found.</p>
-            <p className="text-xs mt-1">Try resetting or modifying filters.</p>
+            {trades.length === 0 ? (
+              <>
+                <p className="text-base">No trades yet.</p>
+                <p className="text-xs mt-1">Click &quot;Add New Trade&quot; to start journaling.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-base">No matching trades found.</p>
+                <p className="text-xs mt-1">Try resetting or modifying filters.</p>
+              </>
+            )}
           </div>
         ) : (
           <>
@@ -339,7 +376,8 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
                           </button>
                           <button
                             onClick={() => trade.id !== undefined && handleDelete(trade.id)}
-                            className="p-1 text-slate-400 hover:text-brand-danger hover:bg-brand-border/40 rounded transition-colors"
+                            disabled={deletingId === trade.id}
+                            className="p-1 text-slate-400 hover:text-brand-danger hover:bg-brand-border/40 rounded transition-colors disabled:opacity-30 disabled:pointer-events-none"
                             title="Delete trade"
                           >
                             <Trash2 size={16} />
@@ -422,7 +460,8 @@ export default function Journal({ trades, onRefresh, userId, accountId, currency
                     </button>
                     <button
                       onClick={() => trade.id !== undefined && handleDelete(trade.id)}
-                      className="flex items-center gap-1 text-xs text-brand-danger font-semibold py-1 px-2.5 rounded bg-brand-danger/10 hover:bg-brand-danger/15 transition-colors"
+                      disabled={deletingId === trade.id}
+                      className="flex items-center gap-1 text-xs text-brand-danger font-semibold py-1 px-2.5 rounded bg-brand-danger/10 hover:bg-brand-danger/15 transition-colors disabled:opacity-30 disabled:pointer-events-none"
                     >
                       <Trash2 size={14} /> Delete
                     </button>

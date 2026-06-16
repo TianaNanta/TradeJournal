@@ -1,5 +1,6 @@
-import { AlertCircle, CheckCircle, Database, Download, FileText, Upload } from 'lucide-react';
+import { AlertCircle, CheckCircle, Database, Download, FileText, RefreshCw, Upload } from 'lucide-react';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import type { Trade } from '../types';
 import { api } from '../utils/api';
 
@@ -12,68 +13,83 @@ interface ImportExportProps {
 
 export default function ImportExport({ trades, onImportSuccess, userId, accountId }: ImportExportProps) {
   const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [pastedCSV, setPastedCSV] = useState('');
 
   const handleExportJSON = () => {
-    const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(trades, null, 2))}`;
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `trades_export_${new Date().toISOString().split('T')[0]}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
+    setExporting(true);
+    try {
+      const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(trades, null, 2))}`;
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', dataStr);
+      downloadAnchor.setAttribute('download', `trades_export_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    } finally {
+      toast.success('Export downloaded');
+      setExporting(false);
+    }
   };
 
   const handleExportCSV = () => {
-    const headers = [
-      'symbol',
-      'type',
-      'quantity',
-      'entry_price',
-      'exit_price',
-      'entry_date',
-      'exit_date',
-      'fee',
-      'setup',
-      'notes',
-    ];
-    const rows = trades.map((t) =>
-      [
-        t.symbol,
-        t.type,
-        t.quantity,
-        t.entry_price,
-        t.exit_price ?? '',
-        t.entry_date,
-        t.exit_date ?? '',
-        t.fee,
-        t.setup ?? '',
-        t.notes ?? '',
-      ]
-        .map((val) => {
-          const strVal = String(val);
-          if (strVal.includes(',') || strVal.includes('"') || strVal.includes('\n')) {
-            return `"${strVal.replace(/"/g, '""')}"`;
-          }
-          return strVal;
-        })
-        .join(','),
-    );
+    setExporting(true);
+    try {
+      const headers = [
+        'symbol',
+        'type',
+        'quantity',
+        'entry_price',
+        'exit_price',
+        'entry_date',
+        'exit_date',
+        'fee',
+        'setup',
+        'notes',
+      ];
+      const rows = trades.map((t) =>
+        [
+          t.symbol,
+          t.type,
+          t.quantity,
+          t.entry_price,
+          t.exit_price ?? '',
+          t.entry_date,
+          t.exit_date ?? '',
+          t.fee,
+          t.setup ?? '',
+          t.notes ?? '',
+        ]
+          .map((val) => {
+            const strVal = String(val);
+            if (strVal.includes(',') || strVal.includes('"') || strVal.includes('\n')) {
+              return `"${strVal.replace(/"/g, '""')}"`;
+            }
+            return strVal;
+          })
+          .join(','),
+      );
 
-    const csvContent = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', url);
-    downloadAnchor.setAttribute('download', `trades_export_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-    URL.revokeObjectURL(url);
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', url);
+      downloadAnchor.setAttribute('download', `trades_export_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      toast.success('Export downloaded');
+      setExporting(false);
+    }
   };
 
   const processCSV = async (csvText: string) => {
     setImportStatus(null);
+    setImporting(true);
     try {
       const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
       if (lines.length < 2) {
@@ -95,6 +111,7 @@ export default function ImportExport({ trades, onImportSuccess, userId, accountI
       const res = await api.importCSV(userId, accountId, csvText);
       if (res.success) {
         setImportStatus({ type: 'success', message: `Successfully imported ${res.count} trades.` });
+        toast.success(`Successfully imported ${res.count} trades`);
         setPastedCSV('');
         onImportSuccess();
       } else {
@@ -103,6 +120,8 @@ export default function ImportExport({ trades, onImportSuccess, userId, accountI
     } catch (err: unknown) {
       console.error(err);
       setImportStatus({ type: 'error', message: 'An error occurred parsing the CSV text.' });
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -146,19 +165,22 @@ export default function ImportExport({ trades, onImportSuccess, userId, accountI
               standard CSV format (useful for analysis in Excel or Google Sheets).
             </p>
           </div>
-
           <div className="grid grid-cols-2 gap-3 mt-4">
             <button
               onClick={handleExportJSON}
-              className="flex items-center justify-center gap-2 bg-brand-border hover:bg-brand-border/80 border border-brand-border text-slate-200 hover:text-white font-medium py-2.5 px-4 rounded-lg transition-colors text-sm"
+              disabled={exporting}
+              className="flex items-center justify-center gap-2 bg-brand-border hover:bg-brand-border/80 border border-brand-border text-slate-200 hover:text-white font-medium py-2.5 px-4 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Download size={16} /> JSON Backup
+              {exporting ? <RefreshCw className="animate-spin" size={16} /> : <Download size={16} />}
+              {exporting ? 'Exporting...' : 'JSON Backup'}
             </button>
             <button
               onClick={handleExportCSV}
-              className="flex items-center justify-center gap-2 bg-brand-border hover:bg-brand-border/80 border border-brand-border text-slate-200 hover:text-white font-medium py-2.5 px-4 rounded-lg transition-colors text-sm"
+              disabled={exporting}
+              className="flex items-center justify-center gap-2 bg-brand-border hover:bg-brand-border/80 border border-brand-border text-slate-200 hover:text-white font-medium py-2.5 px-4 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FileText size={16} /> Export CSV
+              {exporting ? <RefreshCw className="animate-spin" size={16} /> : <FileText size={16} />}
+              {exporting ? 'Exporting...' : 'Export CSV'}
             </button>
           </div>
         </div>
@@ -217,13 +239,13 @@ export default function ImportExport({ trades, onImportSuccess, userId, accountI
                 </div>
               )}
             </div>
-
             <button
               type="submit"
-              disabled={!pastedCSV.trim()}
-              className="bg-brand-primary hover:bg-brand-primary/95 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2 px-5 rounded-lg text-sm transition-colors"
+              disabled={!pastedCSV.trim() || importing}
+              className="bg-brand-primary hover:bg-brand-primary/95 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2 px-5 rounded-lg text-sm transition-colors flex items-center gap-2"
             >
-              Parse & Import
+              {importing && <RefreshCw className="animate-spin" size={16} />}
+              {importing ? 'Importing...' : 'Parse & Import'}
             </button>
           </div>
         </form>

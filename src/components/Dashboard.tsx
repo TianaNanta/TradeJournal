@@ -1,4 +1,16 @@
-import { Activity, ArrowRight, DollarSign, Percent, Scale, TrendingDown, TrendingUp } from 'lucide-react';
+import {
+  Activity,
+  ArrowRight,
+  Database,
+  DollarSign,
+  Percent,
+  RefreshCw,
+  Scale,
+  TrendingDown,
+  TrendingUp,
+} from 'lucide-react';
+import { useState } from 'react';
+import toast from 'react-hot-toast';
 import {
   Bar,
   BarChart,
@@ -14,6 +26,7 @@ import {
   YAxis,
 } from 'recharts';
 import type { DashboardStats, Trade } from '../types';
+import { importDemoData } from '../utils/demoData';
 import { formatCurrency } from '../utils/format';
 
 interface DashboardProps {
@@ -21,12 +34,41 @@ interface DashboardProps {
   trades: Trade[];
   onRefresh: () => void;
   onViewJournal: () => void;
+  userId: string;
+  accountId: string;
   currency?: string;
 }
 
 const PIE_COLORS = ['#10B981', '#EF4444'];
 
-export default function Dashboard({ stats, trades, onViewJournal, currency = 'USD' }: DashboardProps) {
+export default function Dashboard({
+  stats,
+  trades,
+  onViewJournal,
+  onRefresh,
+  userId,
+  accountId,
+  currency = 'USD',
+}: DashboardProps) {
+  const [importingDemo, setImportingDemo] = useState(false);
+
+  const handleImportDemo = async () => {
+    if (!userId || !accountId) return;
+    setImportingDemo(true);
+    try {
+      const res = await importDemoData(userId, accountId);
+      if (res.success) {
+        toast.success(`Imported ${res.count} demo trades`);
+        onRefresh();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to import demo data');
+    } finally {
+      setImportingDemo(false);
+    }
+  };
+
   if (!stats || stats.totalTrades === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-20 px-4">
@@ -37,13 +79,24 @@ export default function Dashboard({ stats, trades, onViewJournal, currency = 'US
         <p className="text-slate-400 max-w-md mb-8">
           Start journaling your trades to see performance metrics, charts, and key performance indicators here.
         </p>
-        <button
-          type="button"
-          onClick={onViewJournal}
-          className="flex items-center gap-2 bg-brand-primary hover:bg-brand-primary/95 text-white font-medium px-6 py-2.5 rounded-lg transition-colors"
-        >
-          Go to Journal to Add Trade <ArrowRight size={16} />
-        </button>
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <button
+            type="button"
+            onClick={onViewJournal}
+            className="flex items-center gap-2 bg-brand-primary hover:bg-brand-primary/95 text-white font-medium px-6 py-2.5 rounded-lg transition-colors"
+          >
+            Go to Journal to Add Trade <ArrowRight size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={handleImportDemo}
+            disabled={importingDemo}
+            className="flex items-center gap-2 bg-brand-card border border-brand-border hover:bg-brand-border text-slate-300 hover:text-white font-medium px-6 py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {importingDemo ? <RefreshCw className="animate-spin" size={16} /> : <Database size={16} />}
+            {importingDemo ? 'Loading...' : 'Load Demo Data'}
+          </button>
+        </div>
       </div>
     );
   }

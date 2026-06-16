@@ -1,14 +1,19 @@
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Database, Info } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
 import type { Trade } from '../types';
+import { importDemoData } from '../utils/demoData';
 import { formatCurrency } from '../utils/format';
 
 interface CalendarViewProps {
   trades: Trade[];
+  userId: string;
+  accountId: string;
+  onRefresh: () => void;
   currency?: string;
 }
 
-export default function CalendarView({ trades, currency = 'USD' }: CalendarViewProps) {
+export default function CalendarView({ trades, userId, accountId, onRefresh, currency = 'USD' }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState<Date>(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
@@ -121,6 +126,33 @@ export default function CalendarView({ trades, currency = 'USD' }: CalendarViewP
           <p className="text-slate-400 text-sm mt-1">Daily aggregated profits and losses for closed trades</p>
         </div>
       </div>
+
+      {trades.length === 0 && (
+        <div className="bg-brand-card border border-brand-border rounded-xl p-5 text-center space-y-3">
+          <p className="text-slate-400 text-sm">
+            No closed trades yet. Add trades in the Journal tab to see your daily PnL breakdown.
+          </p>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const res = await importDemoData(userId, accountId);
+                if (res.success) {
+                  toast.success(`Imported ${res.count} demo trades`);
+                  onRefresh();
+                }
+              } catch (err) {
+                console.error(err);
+                toast.error('Failed to import demo data');
+              }
+            }}
+            className="inline-flex items-center gap-2 text-xs font-semibold bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <Database size={14} />
+            Load Demo Data
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendar Grid card */}

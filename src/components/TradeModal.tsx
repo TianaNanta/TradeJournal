@@ -1,5 +1,6 @@
-import { AlertCircle, X } from 'lucide-react';
+import { AlertCircle, RefreshCw, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import type { Trade } from '../types';
 import { api } from '../utils/api';
 
@@ -45,6 +46,7 @@ export default function TradeModal({
   const [notes, setNotes] = useState('');
 
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Initialize form fields with trade details if in edit mode
   useEffect(() => {
@@ -137,6 +139,7 @@ export default function TradeModal({
       return;
     }
 
+    setSaving(true);
     try {
       const payload = {
         symbol: symbol.trim().toUpperCase(),
@@ -156,11 +159,14 @@ export default function TradeModal({
       } else {
         await api.createTrade(userId, accountId, payload);
       }
+      toast.success(trade ? 'Trade updated' : 'Trade created');
       onRefresh();
       onClose();
     } catch (err) {
       console.error(err);
       setValidationError('Failed to save trade. Please check server logs.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -372,9 +378,11 @@ export default function TradeModal({
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-lg text-sm font-semibold bg-brand-primary hover:bg-brand-primary/95 text-white transition-colors animate-fade-in"
+              disabled={saving}
+              className="px-5 py-2 rounded-lg text-sm font-semibold bg-brand-primary hover:bg-brand-primary/95 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors animate-fade-in flex items-center gap-2"
             >
-              Save Trade
+              {saving && <RefreshCw className="animate-spin" size={16} />}
+              {saving ? 'Saving...' : 'Save Trade'}
             </button>
           </div>
         </form>

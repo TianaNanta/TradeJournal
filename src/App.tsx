@@ -16,6 +16,7 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
 import Auth from './components/Auth';
 import CalendarView from './components/CalendarView';
 import Dashboard from './components/Dashboard';
@@ -46,6 +47,7 @@ function App() {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
+  const [creatingAccount, setCreatingAccount] = useState(false);
   const [newAccountCapital, setNewAccountCapital] = useState('10000');
   const [newAccountCurrency, setNewAccountCurrency] = useState('USD');
   const [accountError, setAccountError] = useState<string | null>(null);
@@ -181,6 +183,7 @@ function App() {
 
   const handleAccountChange = (account: BrokerAccount) => {
     setActiveAccount(account);
+    toast.success(`Switched to ${account.name}`);
   };
 
   const handleCreateAccount = async (e: React.FormEvent) => {
@@ -198,7 +201,7 @@ function App() {
       setAccountError('Initial capital must be a positive number.');
       return;
     }
-
+    setCreatingAccount(true);
     try {
       const created = await api.createAccount(user.uid, {
         name: newAccountName.trim(),
@@ -214,11 +217,13 @@ function App() {
       // Reset form
       setNewAccountName('');
       setNewAccountCapital('10000');
-      setNewAccountCurrency('USD');
+      toast.success('Account created');
       setIsAccountModalOpen(false);
     } catch (err) {
       console.error(err);
       setAccountError('Failed to create account.');
+    } finally {
+      setCreatingAccount(false);
     }
   };
 
@@ -237,9 +242,10 @@ function App() {
         } else {
           setActiveAccount(null);
         }
+        toast.success('Account deleted');
       } catch (err) {
         console.error(err);
-        alert('Failed to delete account.');
+        toast.error('Failed to delete account');
       }
     }
   };
@@ -247,6 +253,7 @@ function App() {
   const handleSignOut = async () => {
     try {
       const auth = getFirebaseAuth();
+      toast.success('Signed out');
       await signOut(auth);
     } catch (e) {
       console.error(e);
@@ -293,105 +300,120 @@ function App() {
   // Render Create First Account screen if logged in but has no accounts
   if (accounts.length === 0 && !loadingData) {
     return (
-      <div className="min-h-screen bg-brand-dark flex items-center justify-center p-4 text-slate-100 font-sans relative overflow-hidden">
-        {/* Background radial gradient spot */}
-        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-brand-primary/10 blur-[130px] pointer-events-none" />
-        <div className="bg-brand-card/60 backdrop-blur-md border border-brand-border w-full max-w-md rounded-2xl shadow-2xl p-6 sm:p-8 z-10 space-y-6">
-          <div className="text-center space-y-2">
-            <div className="inline-flex p-3 bg-brand-primary/10 rounded-xl text-brand-primary mb-2">
-              <FolderOpen size={32} />
-            </div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Create Your Trading Account</h1>
-            <p className="text-slate-400 text-xs sm:text-sm">
-              Please initialize your first broker or trading account to start logging trades.
-            </p>
-          </div>
-
-          {accountError && (
-            <div className="p-3.5 bg-brand-danger/10 border border-brand-danger/25 rounded-lg text-brand-danger text-xs flex items-start gap-2">
-              <AlertCircle className="flex-shrink-0 mt-0.5" size={16} />
-              <span>{accountError}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleCreateAccount} className="space-y-4">
-            <div>
-              <label
-                htmlFor="first-acc-name"
-                className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5"
-              >
-                Broker / Account Name
-              </label>
-              <input
-                id="first-acc-name"
-                type="text"
-                required
-                placeholder="e.g. Interactive Brokers, Binance"
-                value={newAccountName}
-                onChange={(e) => setNewAccountName(e.target.value)}
-                className="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
-              />
+      <>
+        <div className="min-h-screen bg-brand-dark flex items-center justify-center p-4 text-slate-100 font-sans relative overflow-hidden">
+          {/* Background radial gradient spot */}
+          <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-brand-primary/10 blur-[130px] pointer-events-none" />
+          <div className="bg-brand-card/60 backdrop-blur-md border border-brand-border w-full max-w-md rounded-2xl shadow-2xl p-6 sm:p-8 z-10 space-y-6">
+            <div className="text-center space-y-2">
+              <div className="inline-flex p-3 bg-brand-primary/10 rounded-xl text-brand-primary mb-2">
+                <FolderOpen size={32} />
+              </div>
+              <h1 className="text-2xl font-extrabold tracking-tight">Create Your Trading Account</h1>
+              <p className="text-slate-400 text-xs sm:text-sm">
+                Please initialize your first broker or trading account to start logging trades.
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {accountError && (
+              <div className="p-3.5 bg-brand-danger/10 border border-brand-danger/25 rounded-lg text-brand-danger text-xs flex items-start gap-2">
+                <AlertCircle className="flex-shrink-0 mt-0.5" size={16} />
+                <span>{accountError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateAccount} className="space-y-4">
               <div>
                 <label
-                  htmlFor="first-acc-capital"
+                  htmlFor="first-acc-name"
                   className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5"
                 >
-                  Initial Capital
+                  Broker / Account Name
                 </label>
                 <input
-                  id="first-acc-capital"
-                  type="number"
+                  id="first-acc-name"
+                  type="text"
                   required
-                  min="0"
-                  value={newAccountCapital}
-                  onChange={(e) => setNewAccountCapital(e.target.value)}
+                  placeholder="e.g. Interactive Brokers, Binance"
+                  value={newAccountName}
+                  onChange={(e) => setNewAccountName(e.target.value)}
                   className="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
                 />
               </div>
 
-              <div>
-                <label
-                  htmlFor="first-acc-currency"
-                  className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5"
-                >
-                  Currency
-                </label>
-                <select
-                  id="first-acc-currency"
-                  value={newAccountCurrency}
-                  onChange={(e) => setNewAccountCurrency(e.target.value)}
-                  className="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-primary text-slate-200 cursor-pointer"
-                >
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                  <option value="AUD">AUD ($)</option>
-                  <option value="CAD">CAD ($)</option>
-                  <option value="JPY">JPY (¥)</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="first-acc-capital"
+                    className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5"
+                  >
+                    Initial Capital
+                  </label>
+                  <input
+                    id="first-acc-capital"
+                    type="number"
+                    required
+                    min="0"
+                    value={newAccountCapital}
+                    onChange={(e) => setNewAccountCapital(e.target.value)}
+                    className="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="first-acc-currency"
+                    className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5"
+                  >
+                    Currency
+                  </label>
+                  <select
+                    id="first-acc-currency"
+                    value={newAccountCurrency}
+                    onChange={(e) => setNewAccountCurrency(e.target.value)}
+                    className="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-primary text-slate-200 cursor-pointer"
+                  >
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="AUD">AUD ($)</option>
+                    <option value="CAD">CAD ($)</option>
+                    <option value="JPY">JPY (¥)</option>
+                  </select>
+                </div>
               </div>
-            </div>
+
+              <button
+                type="submit"
+                disabled={creatingAccount}
+                className="w-full flex items-center justify-center gap-2 bg-brand-primary hover:bg-brand-primary/95 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg text-sm transition-colors mt-6"
+              >
+                {creatingAccount && <RefreshCw className="animate-spin" size={16} />}
+                {creatingAccount ? 'Creating...' : 'Create Account & Enter'}
+              </button>
+            </form>
 
             <button
-              type="submit"
-              className="w-full flex items-center justify-center gap-2 bg-brand-primary hover:bg-brand-primary/95 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors mt-6"
+              type="button"
+              onClick={handleSignOut}
+              className="w-full text-xs text-slate-500 hover:text-white transition-colors"
             >
-              Create Account & Enter
+              Sign Out
             </button>
-          </form>
-
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="w-full text-xs text-slate-500 hover:text-white transition-colors"
-          >
-            Sign Out
-          </button>
+          </div>
         </div>
-      </div>
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#151C2C',
+              color: '#f1f5f9',
+              border: '1px solid #1F293D',
+            },
+          }}
+        />
+      </>
     );
   }
 
@@ -613,6 +635,8 @@ function App() {
                   trades={trades}
                   onRefresh={refreshData}
                   onViewJournal={() => setActiveTab('journal')}
+                  userId={user.uid}
+                  accountId={activeAccount?.id || ''}
                   currency={activeAccount?.currency}
                 />
               )}
@@ -625,7 +649,15 @@ function App() {
                   currency={activeAccount?.currency}
                 />
               )}
-              {activeTab === 'calendar' && <CalendarView trades={trades} currency={activeAccount?.currency} />}
+              {activeTab === 'calendar' && (
+                <CalendarView
+                  trades={trades}
+                  userId={user.uid}
+                  accountId={activeAccount?.id || ''}
+                  onRefresh={refreshData}
+                  currency={activeAccount?.currency}
+                />
+              )}
               {activeTab === 'import-export' && (
                 <ImportExport
                   onImportSuccess={refreshData}
@@ -752,9 +784,11 @@ function App() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg text-xs font-bold bg-brand-primary text-white hover:bg-brand-primary/90"
+                  disabled={creatingAccount}
+                  className="px-4 py-2 rounded-lg text-xs font-bold bg-brand-primary text-white hover:bg-brand-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  Create Account
+                  {creatingAccount && <RefreshCw className="animate-spin" size={14} />}
+                  {creatingAccount ? 'Creating...' : 'Create Account'}
                 </button>
               </div>
             </form>
@@ -848,6 +882,17 @@ function App() {
           </div>
         </div>
       )}
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#151C2C',
+            color: '#f1f5f9',
+            border: '1px solid #1F293D',
+          },
+        }}
+      />
     </div>
   );
 }
