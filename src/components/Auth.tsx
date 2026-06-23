@@ -1,13 +1,9 @@
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { AlertCircle, Key, Lock, LogIn, Mail, RefreshCw, UserPlus } from 'lucide-react';
+import { AlertCircle, Lock, LogIn, Mail, RefreshCw, UserPlus } from 'lucide-react';
 import { useState } from 'react';
-import { clearFirebaseConfig, getFirebaseAuth, googleProvider } from '../utils/firebase';
+import { getFirebaseAuth, googleProvider } from '../utils/firebase';
 
-interface AuthProps {
-  onResetConfig: () => void;
-}
-
-export default function Auth({ onResetConfig }: AuthProps) {
+export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -96,16 +92,6 @@ export default function Auth({ onResetConfig }: AuthProps) {
     }
   };
 
-  const handleResetConfig = () => {
-    if (
-      window.confirm(
-        'Are you sure you want to disconnect from this Firebase project? You will need to re-enter your config credentials.',
-      )
-    ) {
-      clearFirebaseConfig();
-      onResetConfig();
-    }
-  };
 
   return (
     <div className="min-h-screen bg-brand-dark flex items-center justify-center p-4 text-slate-100 font-sans relative overflow-hidden">
@@ -282,16 +268,6 @@ export default function Auth({ onResetConfig }: AuthProps) {
           Google
         </button>
 
-        {/* Footer actions */}
-        <div className="pt-4 border-t border-brand-border text-center">
-          <button
-            type="button"
-            onClick={handleResetConfig}
-            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-primary transition-colors focus:outline-none"
-          >
-            <Key size={12} /> Disconnect Firebase Project
-          </button>
-        </div>
       </div>
     </div>
   );

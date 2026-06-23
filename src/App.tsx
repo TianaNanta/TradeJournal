@@ -294,7 +294,7 @@ function App() {
 
   // Render Authentication screen
   if (!user) {
-    return <Auth onResetConfig={handleResetConfig} />;
+    return <Auth />;
   }
 
   // Render Create First Account screen if logged in but has no accounts
